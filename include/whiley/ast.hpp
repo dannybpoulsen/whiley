@@ -199,8 +199,9 @@
       auto& getExpression () const {return *expr;}
       
       private:
-      Expression_ptr expr;
       std::string assignName;
+      Expression_ptr expr;
+
     };
 
     class AssertStatement : public Statement {
@@ -248,8 +249,8 @@
       auto& getExpression () const {return *expr;}
       
       private:
-      Expression_ptr expr;
       Expression_ptr memLoc;
+      Expression_ptr expr;
     };
     
     class IfStatement  : public Statement{
@@ -413,7 +414,7 @@
 	}
       }
       
-      void DeclareStmt (std::string name, const location_t& l) {
+      void DeclareStmt (std::string name, const location_t&) {
 	if (!vars.count (name)) {
 	  vars.insert (name);
 	}
