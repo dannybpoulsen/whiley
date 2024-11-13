@@ -1,0 +1,6 @@
+namespace Whiley {
+  struct Version {
+      static constexpr const char* VERSION_MAJOR = "@PROJECT_VERSION_MAJOR@";
+      static constexpr const char* VERSION_MINOR = "@PROJECT_VERSION_MINOR@";
+    };
+}
