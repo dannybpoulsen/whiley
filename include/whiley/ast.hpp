@@ -27,7 +27,12 @@
     class SkipStatement;
     class AssertStatement;
     class AssumeStatement;
-    
+
+    enum class Type {
+      Untyped,
+      UI8,
+      SI8
+    };
     
     class NodeVisitor {
     public:
@@ -51,6 +56,19 @@
       
     };
 
+    class Declaration {
+    public:
+      Declaration (std::string name, Type ty) : name(std::move(name)),type(ty) {}
+
+      auto& getName () const {return name;}
+      Type getType () const {return type;};
+      
+    private:
+      std::string name;
+      Type type;
+      
+    };
+    
     struct fileloc_t {
       std::size_t line{1};
       std::size_t col{1};
@@ -102,7 +120,10 @@
       Expression (const location_t& loc) : Node(loc) {}
       virtual ~Expression () {}
       virtual bool isConstant () const = 0;
-      
+      Type getType () const {return type;}
+      void setType (Type t) {type =t;}
+    private:
+      Type type {Type::Untyped};
     };
     
     using Expression_ptr = std::unique_ptr<Expression>;
@@ -332,21 +353,21 @@
 
     class Program {
     public:
-      Program (std::unordered_set<std::string>&& vars, Statement_ptr&& stmt) : variableNames(std::move(vars)),
+      Program (std::vector<Declaration>&& vars, Statement_ptr&& stmt) : declarations(std::move(vars)),
 									      stmt(std::move(stmt)) {}
 
       auto& getStmt () const {return *stmt;}
-      auto& getVars () const {return variableNames;}
+      auto& getVars () const {return declarations;}
 											     
 	       
     private:
-      std::unordered_set<std::string> variableNames;
+      std::vector<Declaration> declarations;
       Statement_ptr stmt;
     };
 
     inline std::ostream& operator<< (std::ostream& os, const Program& prgm) {
       std::for_each (prgm.getVars().begin(),prgm.getVars().end(),[&os](auto& s){
-	os << "var " << s << ";\n";
+	os << "var " << s.getName() << ";\n";
       });
       return os << prgm.getStmt ();
     }
@@ -376,16 +397,10 @@
       }
 
       void AssignStmt (std::string name, const location_t& l) {
-	if (vars.count (name)) {
-	 
-	  auto expr = exprStack.pop ();
-	  
-	  stmtStack.insert (std::make_unique<AssignStatement> (name,std::move(expr),l));
-	}
-	else {
-	  throw std::runtime_error ("Variable does not exist");
-
-	}
+	
+	auto expr = exprStack.pop ();
+	
+	stmtStack.insert (std::make_unique<AssignStatement> (name,std::move(expr),l));
       }
 
       void AssertStmt (const location_t& l) {
@@ -405,21 +420,17 @@
       }
       
       void NonDetAssignStmt (std::string name, const location_t& l) {
-	if (vars.count (name)) {
 	  stmtStack.insert (std::make_unique<NonDetAssignStatement> (name,l));
-	}
-	else {
-	  throw std::runtime_error ("Variable does not exist");
-
-	}
       }
+  
       
-      void DeclareStmt (std::string name, const location_t&) {
-	if (!vars.count (name)) {
+      void DeclareStmt (std::string name,  Type type,const location_t&) {
+	declarations.emplace_back (name,type);
+	/*if (!vars.count (name)) {
 	  vars.insert (name);
 	}
 	else 
-	  throw std::runtime_error ("Variable already defined");
+	throw std::runtime_error ("Variable already defined");*/
       }
       
       
@@ -475,14 +486,14 @@
         }
       
       auto get () {
-	return Program (std::move(vars),stmtStack.pop ());
+	return Program (std::move(declarations),stmtStack.pop ());
       }
 	
       
     private:
       Stack<Expression_ptr> exprStack;
       Stack<Statement_ptr> stmtStack;
-      std::unordered_set<std::string> vars;
+      std::vector<Declaration> declarations;
       
       
     };

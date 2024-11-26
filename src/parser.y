@@ -40,6 +40,8 @@
 %define parse.assert
 
 %token    VAR
+%token    UI8
+%token    SI8
 %token    WHILE
 %token    IF
 %token    ELSE
@@ -77,7 +79,8 @@
 
 prgm : decllist stmtlist  {}
 decllist :  decllist decl | decl
-decl : VAR IDENTIFIER SEMI { builder.DeclareStmt ($2,@$);}
+decl : VAR IDENTIFIER SEMI { builder.DeclareStmt ($2,Type::UI8,@$);} | UI8 IDENTIFIER SEMI { builder.DeclareStmt ($2,Type::UI8,@$);} | SI8 IDENTIFIER SEMI { builder.DeclareStmt ($2,Type::SI8,@$);}
+        
 
 stmtlist : stmtlist stmt {builder.SequenceStmt (@$);} | stmt
 
