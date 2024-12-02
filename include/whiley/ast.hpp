@@ -11,12 +11,15 @@
 #include <algorithm>
 #include <cstdint>
 #include <sstream>
+#include <utility>
 
   namespace Whiley {
     class Identifier;
     class NumberExpression;
     class BinaryExpression;
     class DerefExpression;
+    class CastExpression;
+    
     class AssignStatement;
     class NonDetAssignStatement;
     class MemAssignStatement;
@@ -33,15 +36,34 @@
       UI8,
       SI8
     };
+
+    inline std::ostream& operator<< (std::ostream& os, Type t) {
+      switch (t) {
+      case Type::Untyped:
+	return os << "Untyped";
+      case Type::UI8:
+	return os << "UI8";
+      case Type::SI8:
+	return os << "SI8";
+      default:
+	std::unreachable();
+      }
+    }
     
-    class NodeVisitor {
+    class ExpressionVisitor {
     public:
-      virtual ~NodeVisitor () {}
+      virtual ~ExpressionVisitor () {} 
       virtual void visitIdentifier (const Identifier&) = 0;
       virtual void visitNumberExpression (const NumberExpression& ) = 0;
       virtual void visitBinaryExpression (const BinaryExpression& ) = 0;
       virtual void visitDerefExpression (const DerefExpression& ) = 0;
+      virtual void visitCastExpression (const CastExpression& ) = 0;
+      
+    };
 
+    class StatementVisitor {
+    public:
+      virtual ~StatementVisitor () {}
       virtual void visitAssertStatement (const AssertStatement& ) = 0;
       virtual void visitAssignStatement (const AssignStatement& ) = 0;
       virtual void visitAssumeStatement (const AssumeStatement& ) = 0;
@@ -55,11 +77,20 @@
       virtual void visitSequenceStatement (const SequenceStatement& ) = 0;
       
     };
+    
+    class NodeVisitor : public ExpressionVisitor,
+			public StatementVisitor
+    {
+    public:
+      virtual ~NodeVisitor () {}
+      
+
+    };
 
     class Declaration {
     public:
       Declaration (std::string name, Type ty) : name(std::move(name)),type(ty) {}
-
+      Declaration (const Declaration&) = default;
       auto& getName () const {return name;}
       Type getType () const {return type;};
       
@@ -100,20 +131,24 @@
       return os << loc.begin << " - " << loc.end;
     }
     
+
+    
     
     class Node {
     public:
       Node (const location_t& loc = location_t{}) : location (loc) {}
       virtual ~Node () {}
-      virtual void accept (NodeVisitor&) const = 0;
       auto& getFileLocation () const {return location.begin;}
     private:
       location_t location;
     };
 
-    std::ostream& operator<< (std::ostream&, const Node& );
     
     using Node_ptr = std::unique_ptr<Node>;
+
+    using expr_t = std::size_t;
+
+    
     
     class Expression : public Node {
     public:
@@ -122,6 +157,8 @@
       virtual bool isConstant () const = 0;
       Type getType () const {return type;}
       void setType (Type t) {type =t;}
+      virtual void accept (ExpressionVisitor&) const = 0;
+      
     private:
       Type type {Type::Untyped};
     };
@@ -133,7 +170,7 @@
     public:
       Identifier (std::string name, const location_t& loc = location_t{}) : Expression(loc), name(std::move(name)) {}
       auto getName () const {return name;}
-      void accept (NodeVisitor& v) const {v.visitIdentifier (*this);} 
+      void accept (ExpressionVisitor& v) const {v.visitIdentifier (*this);} 
       bool isConstant () const override {return false;}
       
     private:
@@ -144,7 +181,7 @@
     public:
       NumberExpression (std::int8_t value, const location_t& loc) : Expression(loc),value(value) {}
       auto getValue () const {return value;}
-      void accept (NodeVisitor& v) const {v.visitNumberExpression (*this);}
+      void accept (ExpressionVisitor& v) const {v.visitNumberExpression (*this);}
       bool isConstant () const override {return true;}
       
     private:
@@ -174,7 +211,7 @@
       auto& getLeft () const {return *left;}
       auto& getRight () const {return *right;}
       bool isConstant () const override {return false;}
-      void accept (NodeVisitor& v) const {v.visitBinaryExpression (*this);}
+      void accept (ExpressionVisitor& v) const {v.visitBinaryExpression (*this);}
       
     private:
       Expression_ptr left;
@@ -189,16 +226,36 @@
 								   
       auto& getMem () const {return *left;}
       bool isConstant () const override {return false;}
-      void accept (NodeVisitor& v) const {v.visitDerefExpression (*this);}
+      void accept (ExpressionVisitor& v) const {v.visitDerefExpression (*this);}
       
     private:
       Expression_ptr left;
     };
 
+    class CastExpression : public Expression {
+    public:
+      CastExpression (Expression_ptr&& l, Type t,const location_t& loc) : Expression(loc),
+									  left(std::move(l)),
+									  type(t)
+      {}
+
+      auto& getExpression () const {return *left;}
+      auto getType () const {return type;}
+      bool isConstant () const override {return false;}
+      void accept (ExpressionVisitor& v) const {v.visitCastExpression (*this);}
+      
+    private:
+      Expression_ptr left;
+      Type type;
+    };
+    
+    
     class Statement : public Node {
     public:
       Statement (const location_t& loc) : Node(loc) {}
       virtual ~Statement () {}
+      virtual void accept (StatementVisitor&) const = 0;
+      
     };
     
     using Statement_ptr = std::unique_ptr<Statement>;
@@ -206,7 +263,7 @@
     class SkipStatement  : public Statement{
     public:
       SkipStatement (const location_t& loc) : Statement(loc) {}
-      void accept (NodeVisitor& v) const {v.visitSkipStatement (*this);}
+      void accept (StatementVisitor& v) const {v.visitSkipStatement (*this);}
     };
     
     class AssignStatement  : public Statement{
@@ -215,7 +272,7 @@
 											       assignName(std::move(assignName)),
 											       expr(std::move(expr)) {}
       
-      void accept (NodeVisitor& v) const override {v.visitAssignStatement(*this);}
+      void accept (StatementVisitor& v) const override {v.visitAssignStatement(*this);}
       auto& getAssignName () const {return assignName;}
       auto& getExpression () const {return *expr;}
       
@@ -229,7 +286,7 @@
     public:
       AssertStatement (Expression_ptr&& expr, const location_t& loc) : Statement(loc),expr(std::move(expr)) {}
       
-      void accept (NodeVisitor& v) const override {v.visitAssertStatement(*this);}
+      void accept (StatementVisitor& v) const override {v.visitAssertStatement(*this);}
       auto& getExpression () const {return *expr;}
       
     private:
@@ -240,7 +297,7 @@
     public:
       AssumeStatement (Expression_ptr&& expr, const location_t& loc) : Statement(loc),expr(std::move(expr)) {}
       
-      void accept (NodeVisitor& v) const override {v.visitAssumeStatement(*this);}
+      void accept (StatementVisitor& v) const override {v.visitAssumeStatement(*this);}
       auto& getExpression () const {return *expr;}
       
     private:
@@ -252,7 +309,7 @@
        NonDetAssignStatement (std::string assignName, const location_t& loc) : Statement(loc),
 									       assignName(std::move(assignName)) {}
       
-      void accept (NodeVisitor& v) const override {v.visitNonDetAssignStatement(*this);}
+      void accept (StatementVisitor& v) const override {v.visitNonDetAssignStatement(*this);}
       auto& getAssignName () const {return assignName;}
       
      private:
@@ -265,7 +322,7 @@
 												memLoc(std::move(mem)),
 												expr(std::move(expr)) {}
       
-      void accept (NodeVisitor& v) const override {v.visitMemAssignStatement(*this);}
+      void accept (StatementVisitor& v) const override {v.visitMemAssignStatement(*this);}
       auto& getMemLoc () const {return *memLoc;}
       auto& getExpression () const {return *expr;}
       
@@ -281,7 +338,7 @@
 													  if_body(std::move(ifb)),
 													  else_body(std::move(elseb)) {}
       
-      void accept (NodeVisitor& v) const override {v.visitIfStatement(*this);}
+      void accept (StatementVisitor& v) const override {v.visitIfStatement(*this);}
       auto& getCondition () const {return *cond;}
       auto& getIfBody () const {return *if_body;}
       auto& getElseBody () const {return *else_body;}
@@ -299,7 +356,7 @@
 											 cond(std::move(cond)) ,
 											 body(std::move(body)) {}
       
-      void accept (NodeVisitor& v) const override {
+      void accept (StatementVisitor& v) const override {
 	v.visitWhileStatement (*this);
       }
 
@@ -318,7 +375,7 @@
 											    first(std::move(first)) ,
 											    second(std::move(second)) {}
       
-      void accept (NodeVisitor& v) const {
+      void accept (StatementVisitor& v) const {
 	v.visitSequenceStatement (*this);
       }
 
@@ -333,6 +390,9 @@
     };
 
 
+    std::ostream& operator<< (std::ostream&, const Statement& );
+    
+    
     template<class T>
     class Stack {
     public:
@@ -389,6 +449,11 @@
 	exprStack.insert (std::make_unique<DerefExpression> (std::move(left),l));
       }
 
+      void CastExpr (Type type, const location_t& l) {
+	auto left = exprStack.pop ();  
+	exprStack.insert (std::make_unique<CastExpression> (std::move(left),type,l));
+      }
+      
       
       void BinaryExpr (BinOps op, const location_t& l) {
 	auto right = exprStack.pop ();
@@ -426,11 +491,6 @@
       
       void DeclareStmt (std::string name,  Type type,const location_t&) {
 	declarations.emplace_back (name,type);
-	/*if (!vars.count (name)) {
-	  vars.insert (name);
-	}
-	else 
-	throw std::runtime_error ("Variable already defined");*/
       }
       
       
@@ -486,7 +546,10 @@
         }
       
       auto get () {
+	if (!stmtStack.size())
+	  SkipStmt ({0,0,0,0});
 	return Program (std::move(declarations),stmtStack.pop ());
+	
       }
 	
       

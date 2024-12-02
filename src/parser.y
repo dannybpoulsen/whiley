@@ -17,10 +17,12 @@
 
 #include <cstdint>
 #include <string>
-#include "whiley/ast.hpp" 
+#include "whiley/ast.hpp"
+#include "whiley/messaging.hpp"
+    
  }
 
-%parse-param { Whiley::Scanner& scanner } {Whiley::ASTBuilder& builder }
+%parse-param { Whiley::Scanner& scanner } {Whiley::ASTBuilder& builder } {Whiley::MessageSystem& messager}
 %initial-action
 {
 
@@ -67,6 +69,7 @@
 %token    NONDET
 %token    ASSERT
 %token    ASSUME
+%token    AS
 
 
 %token END 0 "end of file"
@@ -79,7 +82,9 @@
 
 prgm : decllist stmtlist  {}
 decllist :  decllist decl | decl
-decl : VAR IDENTIFIER SEMI { builder.DeclareStmt ($2,Type::UI8,@$);} | UI8 IDENTIFIER SEMI { builder.DeclareStmt ($2,Type::UI8,@$);} | SI8 IDENTIFIER SEMI { builder.DeclareStmt ($2,Type::SI8,@$);}
+decl : VAR IDENTIFIER SEMI { builder.DeclareStmt ($2,Type::SI8,@$);} |
+       UI8 IDENTIFIER SEMI { builder.DeclareStmt ($2,Type::UI8,@$);} |
+       SI8 IDENTIFIER SEMI { builder.DeclareStmt ($2,Type::SI8,@$);}
         
 
 stmtlist : stmtlist stmt {builder.SequenceStmt (@$);} | stmt
@@ -113,15 +118,20 @@ arith_expr   : arith_expr PLUS arith_term {builder.BinaryExpr (Whiley::BinOps::A
 arith_term   : arith_term MUL arith_factor {builder.BinaryExpr (Whiley::BinOps::Mul,@$);}
              | arith_term DIV arith_factor {builder.BinaryExpr (Whiley::BinOps::Div,@$);}
              | arith_factor
+
 arith_factor : NUMBER {builder.NumberExpr ($1,@$);}
              | IDENTIFIER {builder.IdentifierExpr ($1,@$);}
              | LPARAN expr RPARAN
 	     | DEREFEXPR expr  DEREFEXPR{builder.DerefExpr (@$); }
+             | LPARAN expr AS SI8 RPARAN {builder.CastExpr (Type::SI8,@$);}
+             | LPARAN expr AS UI8 RPARAN {builder.CastExpr (Type::UI8,@$);} 
 
 %%
 
 
 void  Whiley::Parser::error( const location_type& l, const std::string &err_message )
 {
-  std::cerr << "Error: " << err_message << " at " << l << "\n";
+  std::stringstream str;
+  str << "Error: " << err_message << " at " << l << "\n";
+  messager << StringMessage (str.str());
 }

@@ -2,31 +2,25 @@
 #include "scanner.h"
 #include "parser.hh"
 #include "whiley/ast.hpp"
+#include "whiley/messaging.hpp"
 
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
 
 namespace Whiley {
-  Program  WParser::parse( std::istream& iss ) {
+  ParseResult  WParser::parse( std::istream& iss ) {
     ASTBuilder builder;
     Scanner scanner {&iss};
     
-    Parser parser{scanner,builder};
+    Parser parser{scanner,builder, STDMessageSystem::get()};
     
-    
-    if (!parser.parse ()) {
-      return builder.get ();
-    }
-    
-    else {
-      throw std::runtime_error ("Parse Failed");
-      
-    }
+    bool res = parser.parse ();
+    return ParseResult{builder.get (),!res};
     
   }
   
-  Program WParser::parse(const std::string& s ) {
+  ParseResult WParser::parse(const std::string& s ) {
     std::ifstream ifs;
     
     ifs.open (s, std::ifstream::in);

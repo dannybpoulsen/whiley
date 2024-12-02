@@ -19,6 +19,13 @@
 	
 		
       }
+
+      void visitCastExpression (const CastExpression& expr) override {
+	
+	expr.getExpression ().accept (*this);
+	os << " as " << (expr.getType () == Type::SI8 ? "SI8" : "UI8");
+		
+      }
       
       
       void visitBinaryExpression (const BinaryExpression& binary) override {
@@ -57,6 +64,7 @@
 	  break;
 	}
 	binary.getRight ().accept (*this);
+	os << ")";
       }
       void visitAssignStatement (const AssignStatement& ass) override {
 	os << ass.getAssignName () << " = ";
@@ -77,7 +85,7 @@
       }
       
       void visitNonDetAssignStatement (const NonDetAssignStatement& ass) override {
-	os << ass.getAssignName () << " = NonDet";
+	os << ass.getAssignName () << " = ?;\n";
       }
 
       virtual void visitMemAssignStatement (const MemAssignStatement& assign) {
@@ -85,6 +93,7 @@
 	assign.getMemLoc ().accept (*this);
 	os << " = ";
 	assign.getExpression ().accept (*this);
+	os << ";\n";
       }
       
       
@@ -113,8 +122,9 @@
 	seg.getSecond ().accept(*this);
 	
       }
-      
-      auto& operator() (const Node& n) {
+
+      template<class N>
+      auto& operator() (const N& n) {
 	n.accept (*this);
 	return os;
       }
@@ -122,8 +132,8 @@
     private:
       std::ostream& os;
     };
-    
-    std::ostream& operator<< (std::ostream& os, const Node& n)  {
+
+    std::ostream& operator<< (std::ostream& os, const Statement& n)  {
       return OutputVisitor{os} (n);
       
     };

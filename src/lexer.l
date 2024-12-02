@@ -29,7 +29,7 @@ yylval = lval;
 loc = location;
 loc->begin = loc->end;
 %}
-"var"      {return token::UI8;}
+"var"      {return token::VAR;}
 "ui8"      {return token::UI8;}
 "si8"      {return token::SI8;}
 "while"      {return token::WHILE;}
@@ -57,6 +57,8 @@ loc->begin = loc->end;
 "?"  {return token::NONDET;}
 "assert" {return token::ASSERT;}
 "assume" {return token::ASSUME;}
+"as" {return token::AS;}
+
 
 
 <<EOF>> {return token::END;}
