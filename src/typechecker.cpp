@@ -71,8 +71,31 @@ namespace Whiley {
     _internal->type = Type::SI8;
   }
 
-  void TypeChecker::visitDerefExpression (const DerefExpression& )  {
-    _internal->type = Type::SI8;
+  struct TypeMismatch : public TypeCheckerMessage<Node>{
+    TypeMismatch (Type t1,
+		  Type t2,
+		  const Node& n) : TypeCheckerMessage(n),t1(t1),t2(t2) {}
+    
+    std::string to_string () const override {
+      std::stringstream str;
+      str << loc_string ()<< ": '" << "Type mismatch between" << t1 << " and " << t2; 
+      return str.str();
+    }
+    
+  private:
+    Type t1;
+    Type t2;
+  };
+  
+  
+  void TypeChecker::visitDerefExpression (const DerefExpression& expr)  {
+    auto leftType =  CheckExpression (expr.getMem ());
+    if (leftType != Type::UI8) {
+      messaging << TypeMismatch (leftType,Type::UI8,expr);
+      _internal->type = Type::Untyped;
+    }
+    else
+      _internal->type = Type::UI8;
   }
 
   void TypeChecker::visitCastExpression (const CastExpression& expr)  {
@@ -88,7 +111,11 @@ namespace Whiley {
     auto leftType =  CheckExpression (expr.getLeft ());
     auto rightType = CheckExpression (expr.getRight ());
 
-    if (leftType == Type::SI8 ||
+    if (leftType == Type::Untyped ||
+	rightType == Type::Untyped)
+      _internal->type = Type::Untyped;
+	
+    else if (leftType == Type::SI8 ||
 	rightType == Type::SI8) {
       _internal->type = Type::SI8;
     }
@@ -112,21 +139,6 @@ namespace Whiley {
     std::string name; 
   };
 
-  struct TypeMismatch : public TypeCheckerMessage<Node>{
-    TypeMismatch (Type t1,
-		  Type t2,
-		  const Node& n) : TypeCheckerMessage(n),t1(t1),t2(t2) {}
-    
-    std::string to_string () const override {
-      std::stringstream str;
-      str << loc_string ()<< ": '" << "Type mismatch between" << t1 << " and " << t2; 
-      return str.str();
-    }
-    
-  private:
-    Type t1;
-    Type t2;
-  };
   
   void TypeChecker::visitAssignStatement (const AssignStatement& ass)  {
     auto val = CheckExpression (ass.getExpression());
