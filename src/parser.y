@@ -99,7 +99,9 @@ iterativestmt : WHILE LPARAN expr RPARAN LBRACE stmtlist RBRACE {builder.WhileSt
 simpstmt : IDENTIFIER ASS expr SEMI { builder.AssignStmt ($1,@$);}
 | SKIP SEMI {builder.SkipStmt (@$);}
 | DEREF expr ASS expr SEMI {builder.MemAssignStmt (@$);}
-| IDENTIFIER ASS NONDET SEMI { builder.NonDetAssignStmt ($1,@$);}
+| IDENTIFIER ASS NONDET SEMI { builder.NonDetAssignStmt ($1,Type::SI8,@$);}
+| IDENTIFIER ASS NONDET AS UI8 SEMI { builder.NonDetAssignStmt ($1,Type::UI8,@$);}
+| IDENTIFIER ASS NONDET AS SI8 SEMI { builder.NonDetAssignStmt ($1,Type::SI8,@$);}
 | ASSERT LPARAN expr RPARAN SEMI {builder.AssertStmt (@$);} 
 | ASSUME LPARAN expr RPARAN SEMI {builder.AssumeStmt (@$);} 
 

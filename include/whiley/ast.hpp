@@ -306,14 +306,17 @@
     
     class NonDetAssignStatement  : public Statement{
     public:
-       NonDetAssignStatement (std::string assignName, const location_t& loc) : Statement(loc),
-									       assignName(std::move(assignName)) {}
+      NonDetAssignStatement (std::string assignName, Type type, const location_t& loc) : Statement(loc),
+											 assignName(std::move(assignName)),
+											 type(type)
+      {}
       
       void accept (StatementVisitor& v) const override {v.visitNonDetAssignStatement(*this);}
       auto& getAssignName () const {return assignName;}
-      
+      auto getType () const {return type;}
      private:
       std::string assignName;
+      Type type;
     };
     
     class MemAssignStatement  : public Statement{
@@ -484,8 +487,8 @@
 	
       }
       
-      void NonDetAssignStmt (std::string name, const location_t& l) {
-	  stmtStack.insert (std::make_unique<NonDetAssignStatement> (name,l));
+      void NonDetAssignStmt (std::string name, Type type, const location_t& l) {
+	stmtStack.insert (std::make_unique<NonDetAssignStatement> (name,type,l));
       }
   
       

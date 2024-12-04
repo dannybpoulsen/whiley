@@ -174,10 +174,16 @@ namespace Whiley {
   void TypeChecker::visitNonDetAssignStatement (const NonDetAssignStatement& ass )  {
      auto decl = _internal->declarations.find (ass.getAssignName());
      if (decl != _internal->declarations.end()) {
-       _internal->ok = decl->second.getType () == Type::SI8;
+       _internal->ok = decl->second.getType () == ass.getType();
+       if (!_internal->ok) {
+	 messaging << TypeMismatch (decl->second.getType(),ass.getType(),ass);
+    
+       }
      }
-     else
-       _internal->ok = true;
+     else {
+       messaging << VariableNotDeclared{ass.getAssignName(),ass};
+       _internal->ok = false;
+     }
   }
   
   void TypeChecker::visitIfStatement (const IfStatement& iff)  {
