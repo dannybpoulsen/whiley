@@ -42,9 +42,9 @@
       case Type::Untyped:
 	return os << "Untyped";
       case Type::UI8:
-	return os << "UI8";
+	return os << "ui8";
       case Type::SI8:
-	return os << "SI8";
+	return os << "si8";
       default:
 	std::unreachable();
       }
@@ -430,7 +430,7 @@
 
     inline std::ostream& operator<< (std::ostream& os, const Program& prgm) {
       std::for_each (prgm.getVars().begin(),prgm.getVars().end(),[&os](auto& s){
-	os << "var " << s.getName() << ";\n";
+	os << s.getType() << " " << s.getName() << ";\n";
       });
       return os << prgm.getStmt ();
     }
