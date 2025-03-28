@@ -15,6 +15,7 @@ namespace Whiley {
     void visitIdentifier (const Identifier&) override ;
     void visitNumberExpression (const NumberExpression& ) override ; 
     void visitDerefExpression (const DerefExpression& ) override ;
+    void visitUndefExpression (const UndefExpression& ) override ;
     void visitCastExpression (const CastExpression& ) override ;
     
     void visitBinaryExpression (const BinaryExpression& ) override ;  
@@ -22,7 +23,6 @@ namespace Whiley {
     void visitAssignStatement (const AssignStatement& ) override ; 
     void visitAssertStatement (const AssertStatement& ) override ; 
     void visitAssumeStatement (const AssumeStatement& ) override ; 
-    void visitNonDetAssignStatement (const NonDetAssignStatement& ) override ; 
     void visitIfStatement (const IfStatement& ) override ; 
     void visitSkipStatement (const SkipStatement& ) override ; 
     void visitWhileStatement (const WhileStatement& ) override ; 

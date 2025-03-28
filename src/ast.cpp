@@ -17,9 +17,15 @@
 	os << "*";
 	expr.getMem ().accept (*this);
 	
-		
+	
       }
 
+      void visitUndefExpression (const UndefExpression&) override {
+	os << "?";
+	
+	
+      }
+      
       void visitCastExpression (const CastExpression& expr) override {
 	
 	expr.getExpression ().accept (*this);
@@ -82,10 +88,6 @@
 	os << "Assume (";
 	ass.getExpression ().accept (*this);
 	os << ");\n";
-      }
-      
-      void visitNonDetAssignStatement (const NonDetAssignStatement& ass) override {
-	os << ass.getAssignName () << " = ?;\n";
       }
 
       virtual void visitMemAssignStatement (const MemAssignStatement& assign) {

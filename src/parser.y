@@ -99,9 +99,6 @@ iterativestmt : WHILE LPARAN expr RPARAN LBRACE stmtlist RBRACE {builder.WhileSt
 simpstmt : IDENTIFIER ASS expr SEMI { builder.AssignStmt ($1,@$);}
 | SKIP SEMI {builder.SkipStmt (@$);}
 | DEREF expr ASS expr SEMI {builder.MemAssignStmt (@$);}
-| IDENTIFIER ASS NONDET SEMI { builder.NonDetAssignStmt ($1,Type::SI8,@$);}
-| IDENTIFIER ASS NONDET AS UI8 SEMI { builder.NonDetAssignStmt ($1,Type::UI8,@$);}
-| IDENTIFIER ASS NONDET AS SI8 SEMI { builder.NonDetAssignStmt ($1,Type::SI8,@$);}
 | ASSERT LPARAN expr RPARAN SEMI {builder.AssertStmt (@$);} 
 | ASSUME LPARAN expr RPARAN SEMI {builder.AssumeStmt (@$);} 
 
@@ -124,6 +121,7 @@ arith_term   : arith_term MUL arith_factor {builder.BinaryExpr (Whiley::BinOps::
 arith_factor : NUMBER {builder.NumberExpr ($1,@$);}
              | IDENTIFIER {builder.IdentifierExpr ($1,@$);}
              | LPARAN expr RPARAN
+	     | NONDET {builder.UndefExpr (@$);}
 	     | DEREFEXPR expr  DEREFEXPR{builder.DerefExpr (@$); }
              | LPARAN expr AS SI8 RPARAN {builder.CastExpr (Type::SI8,@$);}
              | LPARAN expr AS UI8 RPARAN {builder.CastExpr (Type::UI8,@$);} 

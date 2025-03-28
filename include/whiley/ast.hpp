@@ -16,6 +16,8 @@
   namespace Whiley {
     class Identifier;
     class NumberExpression;
+    class NumberExpression;
+    class UndefExpression;
     class BinaryExpression;
     class DerefExpression;
     class CastExpression;
@@ -58,6 +60,7 @@
       virtual void visitBinaryExpression (const BinaryExpression& ) = 0;
       virtual void visitDerefExpression (const DerefExpression& ) = 0;
       virtual void visitCastExpression (const CastExpression& ) = 0;
+      virtual void visitUndefExpression (const UndefExpression& ) = 0;
       
     };
 
@@ -67,7 +70,7 @@
       virtual void visitAssertStatement (const AssertStatement& ) = 0;
       virtual void visitAssignStatement (const AssignStatement& ) = 0;
       virtual void visitAssumeStatement (const AssumeStatement& ) = 0;
-      virtual void visitNonDetAssignStatement (const NonDetAssignStatement& ) = 0;
+      //virtual void visitNonDetAssignStatement (const NonDetAssignStatement& ) = 0;
       virtual void visitMemAssignStatement (const MemAssignStatement& ) = 0;
       
       virtual void visitIfStatement (const IfStatement& ) = 0;
@@ -232,6 +235,14 @@
       Expression_ptr left;
     };
 
+    class UndefExpression : public Expression {
+    public:
+      UndefExpression (const location_t& loc) : Expression(loc)	 {}
+								   
+      bool isConstant () const override {return false;}
+      void accept (ExpressionVisitor& v) const {v.visitUndefExpression (*this);}
+    };
+    
     class CastExpression : public Expression {
     public:
       CastExpression (Expression_ptr&& l, Type t,const location_t& loc) : Expression(loc),
@@ -304,7 +315,7 @@
       Expression_ptr expr;
     };
     
-    class NonDetAssignStatement  : public Statement{
+    /*class NonDetAssignStatement  : public Statement{
     public:
       NonDetAssignStatement (std::string assignName, Type type, const location_t& loc) : Statement(loc),
 											 assignName(std::move(assignName)),
@@ -318,7 +329,7 @@
       std::string assignName;
       Type type;
     };
-    
+    */
     class MemAssignStatement  : public Statement{
     public:
       MemAssignStatement (Expression_ptr&& mem, Expression_ptr&& expr, const location_t& loc) : Statement(loc),
@@ -443,6 +454,11 @@
 	exprStack.insert (std::make_unique<NumberExpression> (val,l));
       }
 
+      void UndefExpr (const location_t& l) {
+	exprStack.insert (std::make_unique<UndefExpression> (l));
+      }
+      
+      
       void IdentifierExpr (const std::string name, const location_t& l) {
 	exprStack.insert (std::make_unique<Identifier> (name,l));
       }
@@ -486,11 +502,6 @@
 	stmtStack.insert (std::make_unique<AssumeStatement> (std::move(expr),l));
 	
       }
-      
-      void NonDetAssignStmt (std::string name, Type type, const location_t& l) {
-	stmtStack.insert (std::make_unique<NonDetAssignStatement> (name,type,l));
-      }
-  
       
       void DeclareStmt (std::string name,  Type type,const location_t&) {
 	declarations.emplace_back (name,type);

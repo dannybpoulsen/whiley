@@ -71,6 +71,11 @@ namespace Whiley {
     _internal->type = Type::SI8;
   }
 
+  void TypeChecker::visitUndefExpression (const UndefExpression& )  {
+    _internal->type = Type::SI8;
+  }
+  
+  
   struct TypeMismatch : public TypeCheckerMessage<Node>{
     TypeMismatch (Type t1,
 		  Type t2,
@@ -171,20 +176,6 @@ namespace Whiley {
     }
   }
   
-  void TypeChecker::visitNonDetAssignStatement (const NonDetAssignStatement& ass )  {
-     auto decl = _internal->declarations.find (ass.getAssignName());
-     if (decl != _internal->declarations.end()) {
-       _internal->ok = decl->second.getType () == ass.getType();
-       if (!_internal->ok) {
-	 messaging << TypeMismatch (decl->second.getType(),ass.getType(),ass);
-    
-       }
-     }
-     else {
-       messaging << VariableNotDeclared{ass.getAssignName(),ass};
-       _internal->ok = false;
-     }
-  }
   
   void TypeChecker::visitIfStatement (const IfStatement& iff)  {
     auto val = CheckExpression (iff.getCondition());
