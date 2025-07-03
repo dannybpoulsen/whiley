@@ -117,17 +117,16 @@ namespace Whiley {
   void TypeChecker::visitBinaryExpression (const BinaryExpression& expr)  {
     auto leftType =  CheckExpression (expr.getLeft ());
     auto rightType = CheckExpression (expr.getRight ());
-
+    
     if (leftType == Type::Untyped ||
 	rightType == Type::Untyped)
       _internal->type = Type::Untyped;
 	
-    else if (leftType == Type::SI8 ||
-	rightType == Type::SI8) {
-      _internal->type = Type::SI8;
+    else if (leftType == rightType ) {
+      _internal->type = leftType;
     }
     else {
-      _internal->type = Type::UI8;
+      _internal->type = Type::Untyped;
     }
     
   }
