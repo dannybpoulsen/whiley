@@ -41,7 +41,6 @@
 %define api.value.type variant
 %define parse.assert
 
-%token    TYPE
 %token    WHILE
 %token    IF
 %token    ELSE
@@ -65,6 +64,7 @@
 %token    LBRACE
 %token    RBRACE
 %token    NONDET
+%token    NONDETTYPE
 %token    ASSERT
 %token    ASSUME
 %token    AS
@@ -118,8 +118,9 @@ arith_term   : arith_term MUL arith_factor {builder.BinaryExpr (Whiley::BinOps::
 arith_factor : NUMBER {builder.NumberExpr ($1,@$);}
              | IDENTIFIER {builder.IdentifierExpr ($1,@$);}
              | LPARAN expr RPARAN
-	     | NONDET TYPE {builder.UndefExpr ($2,@$);}
-	     | DEREFEXPR expr  DEREFEXPR{builder.DerefExpr (@$); }
+	     | NONDET {builder.UndefExpr (Whiley::Type::SI8,@$);}
+             | NONDETTYPE TYPE {builder.UndefExpr ($2,@$);}
+             | DEREFEXPR expr  DEREFEXPR{builder.DerefExpr (@$); }
              | LPARAN expr AS TYPE RPARAN {builder.CastExpr ($4,@$);}
 
 %%

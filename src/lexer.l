@@ -64,6 +64,8 @@ loc->begin = loc->end;
 "{"  {return token::LBRACE;}
 "}"  {return token::RBRACE;}
 "?"  {return token::NONDET;}
+"?"  {return token::NONDETTYPE;}
+
 "assert" {return token::ASSERT;}
 "assume" {return token::ASSUME;}
 "as" {return token::AS;}
