@@ -36,8 +36,34 @@
     enum class Type {
       Untyped,
       UI8,
-      SI8
+      SI8,
+      UI16,
+      SI16,
+      UI32,
+      SI32,
+      UI64,
+      SI64,
     };
+
+    inline std::size_t bytesize(Type t) {
+      switch (t) {
+      case Type::SI8:
+      case Type::UI8:
+	return 1;
+      case Type::SI16:
+      case Type::UI16:
+	return 2;
+      case Type::SI32:
+      case Type::UI32:
+	return 4;
+      case Type::SI64:
+      case Type::UI64:
+	return 8;
+      case Type::Untyped:
+      default:
+	return 0;
+      };
+    }
 
     inline std::ostream& operator<< (std::ostream& os, Type t) {
       switch (t) {
@@ -47,6 +73,18 @@
 	return os << "ui8";
       case Type::SI8:
 	return os << "si8";
+      case Type::UI16:
+	return os << "ui16";
+      case Type::SI16:
+	return os << "si16";
+      case Type::UI32:
+	return os << "ui32";
+      case Type::SI32:
+	return os << "si32";
+      case Type::UI64:
+	return os << "ui64";
+      case Type::SI64:
+	return os << "si64";
       default:
 	std::unreachable();
       }

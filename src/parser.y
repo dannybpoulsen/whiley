@@ -41,9 +41,7 @@
 %define api.value.type variant
 %define parse.assert
 
-%token    VAR
-%token    UI8
-%token    SI8
+%token    TYPE
 %token    WHILE
 %token    IF
 %token    ELSE
@@ -75,6 +73,7 @@
 %token END 0 "end of file"
 %token <std::string>    IDENTIFIER
 %token <std::int8_t>    NUMBER
+%token <Type>    TYPE
 
 %locations
 
@@ -82,10 +81,8 @@
 
 prgm : decllist stmtlist  {}
 decllist :  decllist decl | decl
-decl : VAR IDENTIFIER SEMI { builder.DeclareStmt ($2,Type::SI8,@$);} |
-       UI8 IDENTIFIER SEMI { builder.DeclareStmt ($2,Type::UI8,@$);} |
-       SI8 IDENTIFIER SEMI { builder.DeclareStmt ($2,Type::SI8,@$);}
-        
+decl : TYPE IDENTIFIER SEMI { builder.DeclareStmt ($2,$1,@$);}
+       
 
 stmtlist : stmtlist stmt {builder.SequenceStmt (@$);} | stmt
 
@@ -123,8 +120,7 @@ arith_factor : NUMBER {builder.NumberExpr ($1,@$);}
              | LPARAN expr RPARAN
 	     | NONDET {builder.UndefExpr (@$);}
 	     | DEREFEXPR expr  DEREFEXPR{builder.DerefExpr (@$); }
-             | LPARAN expr AS SI8 RPARAN {builder.CastExpr (Type::SI8,@$);}
-             | LPARAN expr AS UI8 RPARAN {builder.CastExpr (Type::UI8,@$);} 
+             | LPARAN expr AS TYPE RPARAN {builder.CastExpr ($4,@$);}
 
 %%
 

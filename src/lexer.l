@@ -2,6 +2,8 @@
 /* C++ string header, for string ops below */
 #include <string>
 #include "scanner.h"
+#include "whiley/ast.hpp"
+
 /* Implementation of yyFlexScanner */ 
 #undef  YY_DECL
 #define YY_DECL int Whiley::Scanner::yylex(Whiley::Parser::semantic_type * const lval, Whiley::Parser::location_type *location )
@@ -29,9 +31,16 @@ yylval = lval;
 loc = location;
 loc->begin = loc->end;
 %}
-"var"      {return token::VAR;}
-"ui8"      {return token::UI8;}
-"si8"      {return token::SI8;}
+"var"      {yylval->emplace<Type> (Type::SI8); return token::TYPE;}
+"si8"      {yylval->emplace<Type> (Type::SI8); return token::TYPE;}
+"ui8"      {yylval->emplace<Type> (Type::UI8); return token::TYPE;}
+"si16"      {yylval->emplace<Type> (Type::SI16); return token::TYPE;}
+"ui16"      {yylval->emplace<Type> (Type::UI16); return token::TYPE;}
+"si32"      {yylval->emplace<Type> (Type::SI32); return token::TYPE;}
+"ui32"      {yylval->emplace<Type> (Type::UI32); return token::TYPE;}
+"si64"      {yylval->emplace<Type> (Type::SI64); return token::TYPE;}
+"ui64"      {yylval->emplace<Type> (Type::UI64); return token::TYPE;}
+
 "while"      {return token::WHILE;}
 "if"      {return token::IF;}
 "else"      {return token::ELSE;}
