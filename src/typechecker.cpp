@@ -107,7 +107,7 @@ namespace Whiley {
   
   void TypeChecker::visitCastExpression (const CastExpression& expr)  {
     auto v = CheckExpression (expr.getExpression ());
-    if (bytesize(v) == bytesize(expr.getType()))
+    if (v != Type::Untyped)
       _internal->type = expr.getType();
     else
       _internal->type = Type::Untyped;
