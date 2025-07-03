@@ -275,10 +275,13 @@
 
     class UndefExpression : public Expression {
     public:
-      UndefExpression (const location_t& loc) : Expression(loc)	 {}
+      UndefExpression (Whiley::Type type, const location_t& loc) : Expression(loc),type(type)	 {}
 								   
       bool isConstant () const override {return false;}
       void accept (ExpressionVisitor& v) const {v.visitUndefExpression (*this);}
+      auto getUndefType() const {return type;}
+    private:
+      Whiley::Type type;
     };
     
     class CastExpression : public Expression {
@@ -492,8 +495,8 @@
 	exprStack.insert (std::make_unique<NumberExpression> (val,l));
       }
 
-      void UndefExpr (const location_t& l) {
-	exprStack.insert (std::make_unique<UndefExpression> (l));
+      void UndefExpr (Whiley::Type type, const location_t& l) {
+	exprStack.insert (std::make_unique<UndefExpression> (type,l));
       }
       
       

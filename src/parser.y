@@ -118,7 +118,7 @@ arith_term   : arith_term MUL arith_factor {builder.BinaryExpr (Whiley::BinOps::
 arith_factor : NUMBER {builder.NumberExpr ($1,@$);}
              | IDENTIFIER {builder.IdentifierExpr ($1,@$);}
              | LPARAN expr RPARAN
-	     | NONDET {builder.UndefExpr (@$);}
+	     | NONDET TYPE {builder.UndefExpr ($2,@$);}
 	     | DEREFEXPR expr  DEREFEXPR{builder.DerefExpr (@$); }
              | LPARAN expr AS TYPE RPARAN {builder.CastExpr ($4,@$);}
 

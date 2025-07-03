@@ -71,8 +71,8 @@ namespace Whiley {
     _internal->type = Type::SI8;
   }
 
-  void TypeChecker::visitUndefExpression (const UndefExpression& )  {
-    _internal->type = Type::SI8;
+  void TypeChecker::visitUndefExpression (const UndefExpression& e)  {
+    _internal->type = e.getUndefType();
   }
   
   
