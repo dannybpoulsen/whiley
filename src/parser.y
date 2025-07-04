@@ -120,7 +120,7 @@ arith_factor : NUMBER {builder.NumberExpr ($1,@$);}
              | LPARAN expr RPARAN
 	     | NONDET {builder.UndefExpr (Whiley::Type::SI8,@$);}
              | NONDETTYPE TYPE {builder.UndefExpr ($2,@$);}
-             | DEREFEXPR expr  DEREFEXPR{builder.DerefExpr (@$); }
+             | DEREFEXPR expr  AS TYPE DEREFEXPR{builder.DerefExpr ($4,@$); }
              | LPARAN expr AS TYPE RPARAN {builder.CastExpr ($4,@$);}
 
 %%

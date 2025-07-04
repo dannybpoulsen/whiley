@@ -262,15 +262,19 @@
 
     class DerefExpression : public Expression {
     public:
-      DerefExpression (Expression_ptr&& l, const location_t& loc) : Expression(loc),
-								    left(std::move(l)) {}
+      DerefExpression (Expression_ptr&& l, Type load, const location_t& loc) : Expression(loc),
+									       left(std::move(l)),
+									       loadtype(load)
+									       
+      {}
 								   
       auto& getMem () const {return *left;}
       bool isConstant () const override {return false;}
       void accept (ExpressionVisitor& v) const {v.visitDerefExpression (*this);}
-      
+      auto getLoadType() const {return loadtype;}
     private:
       Expression_ptr left;
+      Type loadtype;
     };
 
     class UndefExpression : public Expression {
@@ -504,9 +508,9 @@
 	exprStack.insert (std::make_unique<Identifier> (name,l));
       }
 
-      void DerefExpr ( const location_t& l) {
+      void DerefExpr (Type t, const location_t& l) {
 	auto left = exprStack.pop ();  
-	exprStack.insert (std::make_unique<DerefExpression> (std::move(left),l));
+	exprStack.insert (std::make_unique<DerefExpression> (std::move(left),t,l));
       }
 
       void CastExpr (Type type, const location_t& l) {

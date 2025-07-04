@@ -100,7 +100,7 @@ namespace Whiley {
       _internal->type = Type::Untyped;
     }
     else
-      _internal->type = Type::UI8;
+      _internal->type = expr.getLoadType();
   }
 
   
