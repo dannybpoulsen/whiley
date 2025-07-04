@@ -220,13 +220,12 @@
 
     class NumberExpression : public Expression {
     public:
-      NumberExpression (std::int8_t value, const location_t& loc) : Expression(loc),value(value) {}
+      NumberExpression (std::int64_t value, const location_t& loc) : Expression(loc),value(value) {}
       auto getValue () const {return value;}
       void accept (ExpressionVisitor& v) const {v.visitNumberExpression (*this);}
       bool isConstant () const override {return true;}
-      
     private:
-      std::int8_t value;
+      std::int64_t value;
     };
     
     enum class BinOps {
@@ -495,10 +494,11 @@
     public:
       
       
-      void NumberExpr (std::int8_t val, const location_t& l) {
+      void NumberExpr (std::int64_t val, const location_t& l) {
 	exprStack.insert (std::make_unique<NumberExpression> (val,l));
       }
 
+      
       void UndefExpr (Whiley::Type type, const location_t& l) {
 	exprStack.insert (std::make_unique<UndefExpression> (type,l));
       }

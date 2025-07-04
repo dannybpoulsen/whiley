@@ -72,7 +72,9 @@
 
 %token END 0 "end of file"
 %token <std::string>    IDENTIFIER
-%token <std::int8_t>    NUMBER
+%token <std::int64_t>   NUMBER
+%token <std::int64_t>   CHAR
+
 %token <Type>    TYPE
 
 %locations
@@ -116,6 +118,7 @@ arith_term   : arith_term MUL arith_factor {builder.BinaryExpr (Whiley::BinOps::
              | arith_factor
 
 arith_factor : NUMBER {builder.NumberExpr ($1,@$);}
+             | CHAR {builder.NumberExpr ($1,@$);builder.CastExpr(Type::SI8,@$);}
              | IDENTIFIER {builder.IdentifierExpr ($1,@$);}
              | LPARAN expr RPARAN
 	     | NONDET {builder.UndefExpr (Whiley::Type::SI8,@$);}

@@ -67,8 +67,8 @@ namespace Whiley {
       _internal->type = Type::Untyped;
   }
   
-  void TypeChecker::visitNumberExpression (const NumberExpression& )  {
-    _internal->type = Type::SI8;
+  void TypeChecker::visitNumberExpression (const NumberExpression&)  {
+    _internal->type = Type::SI64;
   }
 
   void TypeChecker::visitUndefExpression (const UndefExpression& e)  {
@@ -83,7 +83,7 @@ namespace Whiley {
     
     std::string to_string () const override {
       std::stringstream str;
-      str << loc_string ()<< ": '" << "Type mismatch between" << t1 << " and " << t2; 
+      str << loc_string ()<< ": '" << "Type mismatch between " << t1 << " and " << t2; 
       return str.str();
     }
     
