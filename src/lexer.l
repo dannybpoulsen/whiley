@@ -31,6 +31,7 @@ yylval = lval;
 loc = location;
 loc->begin = loc->end;
 %}
+"param"    {return token::PARAM;}
 "var"      {yylval->emplace<Type> (Type::SI8); return token::TYPE;}
 "si8"      {yylval->emplace<Type> (Type::SI8); return token::TYPE;}
 "ui8"      {yylval->emplace<Type> (Type::UI8); return token::TYPE;}
