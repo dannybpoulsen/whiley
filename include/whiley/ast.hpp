@@ -134,7 +134,7 @@
       Declaration (const Declaration&) = default;
       auto& getName () const {return name;}
       Type getType () const {return type;};
-      
+      bool isParamter () const {return parameter;}
     private:
       std::string name;
       Type type;
