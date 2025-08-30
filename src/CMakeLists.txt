@@ -9,6 +9,7 @@ configure_file (
  "${CMAKE_CURRENT_BINARY_DIR}/whiley/config.hpp"
 )
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_library (whiley STATIC ast.cpp wparser.cpp typechecker.cpp "${CMAKE_CURRENT_BINARY_DIR}/lexer.cc" "${CMAKE_CURRENT_BINARY_DIR}/parser.cc")
 target_include_directories (whiley PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
