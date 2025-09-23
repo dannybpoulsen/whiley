@@ -69,6 +69,7 @@
 %token    ASSUME
 %token    AS
 %token    PARAM
+%token    OUTPUT
 
 
 %token END 0 "end of file"
@@ -84,8 +85,9 @@
 
 prgm : decllist stmtlist  {}
 decllist :  decllist decl | decl
-decl : TYPE IDENTIFIER SEMI { builder.DeclareStmt ($2,$1,false,@$);}
-     | PARAM TYPE IDENTIFIER SEMI { builder.DeclareStmt ($3,$2,true,@$);}
+decl : TYPE IDENTIFIER SEMI { builder.DeclareStmt ($2,$1,false,false,@$);}
+     | PARAM TYPE IDENTIFIER SEMI { builder.DeclareStmt ($3,$2,true,false,@$);}
+     | OUTPUT TYPE IDENTIFIER SEMI { builder.DeclareStmt ($3,$2,false,true,@$);}
        
 
 stmtlist : stmtlist stmt {builder.SequenceStmt (@$);} | stmt

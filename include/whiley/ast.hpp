@@ -130,15 +130,17 @@
 
     class Declaration {
     public:
-      Declaration (std::string name, Type ty,bool parameter = false) : name(std::move(name)),type(ty),parameter(parameter) {}
+      Declaration (std::string name, Type ty,bool parameter = false,bool out = false) : name(std::move(name)),type(ty),parameter(parameter),output(out) {}
       Declaration (const Declaration&) = default;
       auto& getName () const {return name;}
       Type getType () const {return type;};
       bool isParamter () const {return parameter;}
+      bool isOutput () const {return output;}
     private:
       std::string name;
       Type type;
       bool parameter;
+      bool output;
     };
     
     struct fileloc_t {
@@ -548,8 +550,8 @@
 	
       }
       
-      void DeclareStmt (std::string name,  Type type,bool parameter,const location_t&) {
-	declarations.emplace_back (name,type,parameter);
+      void DeclareStmt (std::string name,  Type type,bool parameter,bool out, const location_t&) {
+	declarations.emplace_back (name,type,parameter,out);
       }
       
       
