@@ -68,6 +68,10 @@
 	case BinOps::NEq:
 	  os << "  != ";
 	  break;
+	case BinOps::Mod:
+	  os << "  % ";
+	  break;
+	
 	}
 	binary.getRight ().accept (*this);
 	os << ")";

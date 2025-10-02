@@ -240,7 +240,8 @@
       Lt,
       Gt,
       Eq,
-      NEq
+      NEq,
+      Mod
     };
 
     class BinaryExpression : public Expression {

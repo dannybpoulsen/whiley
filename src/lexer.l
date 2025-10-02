@@ -51,6 +51,7 @@ loc->begin = loc->end;
 "-"  {return token::MINUS;}
 "/"  {return token::DIV;}
 "*"  {return token::MUL;}
+"%"  {return token::MOD;}
 "#"  {return token::DEREF;}
 "$"  {return token::DEREFEXPR;}
 "<="  {return token::LEQ;}

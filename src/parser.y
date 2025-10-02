@@ -49,6 +49,7 @@
 %token    MINUS
 %token    DIV
 %token    MUL
+%token    MOD
 %token    DEREF
 %token    DEREFEXPR
 %token    LEQ
@@ -119,6 +120,7 @@ arith_expr   : arith_expr PLUS arith_term {builder.BinaryExpr (Whiley::BinOps::A
 	     
 arith_term   : arith_term MUL arith_factor {builder.BinaryExpr (Whiley::BinOps::Mul,@$);}
              | arith_term DIV arith_factor {builder.BinaryExpr (Whiley::BinOps::Div,@$);}
+             | arith_term MOD arith_factor {builder.BinaryExpr (Whiley::BinOps::Mod,@$);}
              | arith_factor
 
 arith_factor : NUMBER {builder.NumberExpr ($1,@$);}
