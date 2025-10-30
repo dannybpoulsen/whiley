@@ -29,6 +29,7 @@
     class IfStatement;
     class WhileStatement;
     class SequenceStatement;
+    class ChooseStatement;
     class SkipStatement;
     class AssertStatement;
     class AssumeStatement;
@@ -115,6 +116,8 @@
       virtual void visitSkipStatement (const SkipStatement& ) = 0;
       
       virtual void visitWhileStatement (const WhileStatement& ) = 0;
+      virtual void visitChooseStatement (const ChooseStatement& ) = 0;
+      
       virtual void visitSequenceStatement (const SequenceStatement& ) = 0;
       
     };
@@ -362,21 +365,6 @@
       Expression_ptr expr;
     };
     
-    /*class NonDetAssignStatement  : public Statement{
-    public:
-      NonDetAssignStatement (std::string assignName, Type type, const location_t& loc) : Statement(loc),
-											 assignName(std::move(assignName)),
-											 type(type)
-      {}
-      
-      void accept (StatementVisitor& v) const override {v.visitNonDetAssignStatement(*this);}
-      auto& getAssignName () const {return assignName;}
-      auto getType () const {return type;}
-     private:
-      std::string assignName;
-      Type type;
-    };
-    */
     class MemAssignStatement  : public Statement{
     public:
       MemAssignStatement (Expression_ptr&& mem, Expression_ptr&& expr, const location_t& loc) : Statement(loc),
@@ -411,6 +399,18 @@
       
     };
 
+    class ChooseStatement  : public Statement {
+    public:
+      ChooseStatement (std::vector<Statement_ptr>&& stmts,const location_t& loc) : Statement(loc),
+										   statements(std::move(stmts)) {}
+      
+      
+      void accept (StatementVisitor& v) const override {v.visitChooseStatement(*this);}
+      const auto& getStatements() const {return statements;}
+    private:
+      std::vector<Statement_ptr> statements;
+    };
+    
     class WhileStatement  : public Statement{
     public:
       WhileStatement (Expression_ptr&& cond,Statement_ptr body, const location_t& loc) : Statement(loc),
@@ -567,6 +567,14 @@
 			  );
       }
 
+      void ChooseStmt (std::size_t bufs, const location_t& l)  {
+	std::vector<Statement_ptr> statements;
+	for (std::size_t i = 0; i< bufs; ++i) {
+	  statements.push_back (std::move(stmtStack.pop ()));
+	}
+	stmtStack.insert (std::make_unique<ChooseStatement> (std::move(statements),l));
+      }
+      
        void SkipStmt (const location_t& l) {
 	
 	 stmtStack.insert (std::make_unique<SkipStatement> (l));

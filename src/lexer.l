@@ -72,6 +72,8 @@ loc->begin = loc->end;
 "assert" {return token::ASSERT;}
 "assume" {return token::ASSUME;}
 "as" {return token::AS;}
+"choose" { return token::CHOOSE;}
+"::" { return token::SELECTOR;}
 
 
 

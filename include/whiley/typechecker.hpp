@@ -26,6 +26,7 @@ namespace Whiley {
     void visitIfStatement (const IfStatement& ) override ; 
     void visitSkipStatement (const SkipStatement& ) override ; 
     void visitWhileStatement (const WhileStatement& ) override ; 
+    void visitChooseStatement (const ChooseStatement& ) override ; 
     void visitSequenceStatement (const SequenceStatement& ) override ; 
     void visitMemAssignStatement (const MemAssignStatement&) override;
     

@@ -203,7 +203,15 @@ namespace Whiley {
     bool ok = CheckStatement (seq.getFirst ());
     _internal->ok = ok && CheckStatement (seq.getSecond ());
     
-  } 
+  }
+
+  void TypeChecker::visitChooseStatement (const ChooseStatement& whiles)  {
+    for (auto& s :  whiles.getStatements()) {
+      CheckStatement (*s);
+    }
+  }
+      
+  
   void TypeChecker::visitMemAssignStatement (const MemAssignStatement& ma) {
     auto loc = CheckExpression(ma.getMemLoc ());
     auto expr = CheckExpression(ma.getExpression ());

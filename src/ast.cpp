@@ -112,6 +112,7 @@
 	ifs.getElseBody ().accept (*this);
 	os << "}\n";
       }
+      
       void visitSkipStatement (const SkipStatement& ) override {
 	os << "Skip";
       }
@@ -123,6 +124,19 @@
 	whiles.getBody ().accept(*this);
 	os << "\n}";
       }
+
+      void visitChooseStatement (const ChooseStatement& whiles) override {
+	os << "choose {";
+	for (auto& s :  whiles.getStatements()) {
+	  os << ":: ";
+	  s->accept(*this);
+	  os << "\n";
+	}
+	  
+	os << "\n}";
+      }
+      
+      
       void visitSequenceStatement (const SequenceStatement& seg) override {
 	seg.getFirst ().accept(*this);
 	seg.getSecond ().accept(*this);

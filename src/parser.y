@@ -71,7 +71,8 @@
 %token    AS
 %token    PARAM
 %token    OUTPUT
-
+%token    CHOOSE
+%token    SELECTOR
 
 %token END 0 "end of file"
 %token <std::string>    IDENTIFIER
@@ -79,7 +80,7 @@
 %token <std::int64_t>   CHAR
 
 %token <Type>    TYPE
-
+%type<std::size_t> stmt_list; 
 %locations
 
 %%
@@ -95,8 +96,12 @@ stmtlist : stmtlist stmt {builder.SequenceStmt (@$);} | stmt
 
 stmt : simpstmt  | selectivestmt | iterativestmt
 
+stmt_list : SELECTOR stmt {$$ =1;}
+| stmt_list SELECTOR stmt {$$ = $1+1;}
+
 selectivestmt : IF LPARAN expr RPARAN LBRACE stmtlist RBRACE ELSE LBRACE stmtlist RBRACE {builder.IfStmt (@$);}
               | IF LPARAN expr RPARAN LBRACE stmtlist RBRACE {builder.SkipStmt (@$);builder.IfStmt (@$);}
+              | CHOOSE LBRACE stmt_list RBRACE {builder.ChooseStmt ($3,@$);}
 
 iterativestmt : WHILE LPARAN expr RPARAN LBRACE stmtlist RBRACE {builder.WhileStmt (@$);}
 
