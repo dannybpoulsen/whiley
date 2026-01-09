@@ -13,6 +13,8 @@
 #include <sstream>
 #include <utility>
 
+#include "whiley/symbol.hpp"
+
   namespace Whiley {
     class Identifier;
     class NumberExpression;
@@ -133,14 +135,16 @@
 
     class Declaration {
     public:
-      Declaration (std::string name, Type ty,bool parameter = false,bool out = false) : name(std::move(name)),type(ty),parameter(parameter),output(out) {}
+      Declaration (Whiley::Symbol symb, Type ty,bool parameter = false,bool out = false) : name(std::move(symb)),type(ty),parameter(parameter),output(out) {}
       Declaration (const Declaration&) = default;
-      auto& getName () const {return name;}
+      auto getName () const {return name.getName();}
+      Whiley::Symbol getSymbol () const {return name;}
+      
       Type getType () const {return type;};
       bool isParamter () const {return parameter;}
       bool isOutput () const {return output;}
     private:
-      std::string name;
+      Whiley::Symbol name;
       Type type;
       bool parameter;
       bool output;
@@ -214,13 +218,13 @@
     
     class Identifier : public Expression {
     public:
-      Identifier (std::string name, const location_t& loc = location_t{}) : Expression(loc), name(std::move(name)) {}
-      auto getName () const {return name;}
+      Identifier (Whiley::Symbol name, const location_t& loc = location_t{}) : Expression(loc), symb(std::move(name)) {}
+      auto getName () const {return symb.getName();}
       void accept (ExpressionVisitor& v) const {v.visitIdentifier (*this);} 
       bool isConstant () const override {return false;}
       
     private:
-      std::string name;
+      Whiley::Symbol symb;
     };
 
     class NumberExpression : public Expression {
@@ -472,18 +476,23 @@
       std::vector<T> stack;
     };
 
+    
     class Program {
     public:
-      Program (std::vector<Declaration>&& vars, Statement_ptr&& stmt) : declarations(std::move(vars)),
-									      stmt(std::move(stmt)) {}
+      Program (Whiley::Frame&& frame, std::vector<Declaration>&& vars, Statement_ptr&& stmt) : declarations(std::move(vars)),
+											       stmt(std::move(stmt)),
+											       frame(std::move(frame))
+      {}
 
       auto& getStmt () const {return *stmt;}
       auto& getVars () const {return declarations;}
-											     
+      
 	       
     private:
       std::vector<Declaration> declarations;
       Statement_ptr stmt;
+      Whiley::Frame frame;
+      
     };
 
     inline std::ostream& operator<< (std::ostream& os, const Program& prgm) {
@@ -508,7 +517,8 @@
       
       
       void IdentifierExpr (const std::string name, const location_t& l) {
-	exprStack.insert (std::make_unique<Identifier> (name,l));
+	auto symb = frame.resolve(name);
+	exprStack.insert (std::make_unique<Identifier> (symb,l));
       }
 
       void DerefExpr (Type t, const location_t& l) {
@@ -552,7 +562,8 @@
       }
       
       void DeclareStmt (std::string name,  Type type,bool parameter,bool out, const location_t&) {
-	declarations.emplace_back (name,type,parameter,out);
+	auto symb = frame.createSymbol (name);
+	declarations.emplace_back (symb,type,parameter,out);
       }
       
       
@@ -618,7 +629,7 @@
       auto get () {
 	if (!stmtStack.size())
 	  SkipStmt ({0,0,0,0});
-	return Program (std::move(declarations),stmtStack.pop ());
+	return Program (std::move(frame),std::move(declarations),stmtStack.pop ());
 	
       }
 	
@@ -627,8 +638,7 @@
       Stack<Expression_ptr> exprStack;
       Stack<Statement_ptr> stmtStack;
       std::vector<Declaration> declarations;
-      
-      
+      Whiley::Frame frame{""};
     };
     
     
