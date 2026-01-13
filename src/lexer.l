@@ -68,13 +68,15 @@ loc->begin = loc->end;
 "}"  {return token::RBRACE;}
 "?"  {return token::NONDET;}
 "??"  {return token::NONDETTYPE;}
+"fn " {return token::FUNCTION;}
+"->"  { return token::ARROW;}
 
 "assert" {return token::ASSERT;}
 "assume" {return token::ASSUME;}
 "as" {return token::AS;}
 "choose" { return token::CHOOSE;}
 "::" { return token::SELECTOR;}
-
+"," {return token::COMMA;}
 
 
 <<EOF>> {return token::END;}

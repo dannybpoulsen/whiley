@@ -4,6 +4,8 @@
 #include <string>
 #include <stdexcept>
 #include <sstream>
+#include <iostream>
+#include "whiley/ast.hpp"
 
 namespace Whiley {
 
@@ -25,6 +27,7 @@ namespace Whiley {
     
     std::string name;
     std::shared_ptr<Internal> parent;
+    UserData data;
   };
 
   Symbol::Symbol(Symbol parent,std::string name) : internal(std::make_shared<Internal>(name,parent.internal)){
@@ -37,6 +40,14 @@ namespace Whiley {
     std::stringstream str;
     internal->output(str);
     return str.str();
+  }
+
+
+  void Symbol::setUserData (UserData data) {
+    internal->data = std::move(data);
+  }
+  const UserData& Symbol::getUserData () const  {
+    return internal->data;
   }
   
   
@@ -67,11 +78,18 @@ namespace Whiley {
   Symbol Frame::createSymbol (std::string s) {
     return _internal->makeSymbol (s);
   }
+
+  Frame Frame::close() {
+    if (!_internal->parent)
+      throw std::runtime_error {"No scope to close to"};
+    return Frame{_internal->parent};
+  }
   
   Frame Frame::create (std::string s) {
     if (!_internal->frames.count(s)) {
-      auto frame_symb = _internal->makeSymbol (s);
+      auto frame_symb = _internal->makeSymbol (s+"__");
       auto inter_frame = std::make_shared<Internal> (frame_symb,_internal->shared_from_this ());
+      _internal->frames.emplace(s+"__",inter_frame);
       return Frame{inter_frame};
     }
     throw std::runtime_error ("Symbol exists");
@@ -79,7 +97,7 @@ namespace Whiley {
 
   Frame Frame::open (std::string s) {
     std::shared_ptr<Internal> _frame{nullptr};
-      auto it  = _internal->frames.find (s);
+      auto it  = _internal->frames.find (s+"__");
       if (it== _internal->frames.end ())
 	throw std::runtime_error ("Cannot find frame");
 
@@ -97,9 +115,31 @@ namespace Whiley {
 	   
   }
 
+  bool Frame::resolve(const std::string& s, Symbol& symb) const {
+    auto it = _internal->symbols.find(s);
+    if (it != _internal->symbols.end()) {
+      symb = it->second;
+      return true;
+    }
+    else
+      return false;
+  }
+  
   Frame::Frame(std::string s) {
     _internal = std::make_shared<Internal> (Symbol (s),nullptr);
   }
-  
+
+  std::generator<Symbol> Frame::getLocalSymbols() const {
+    for (auto [name,symb] : _internal->symbols )
+      co_yield symb;
+  }
+
+  Function::~Function() {}
+  Function::Function (Whiley::Frame f, Statement_ptr&& stmt, std::vector<Symbol>&& params,Type retType)  :
+    frame(f),
+    returnType(retType),
+   
+    stmt(std::move(stmt)),
+   parameters(std::move(params)){}
   
 }

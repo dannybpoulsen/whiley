@@ -6,8 +6,9 @@
     public:
       OutputVisitor (std::ostream& o) : os(o) {}
       void visitIdentifier (const Identifier& ident) override {
-	os << ident.getName ();
+	os << ident.getSymbol ().getFullName();
       }
+      
       void visitNumberExpression (const NumberExpression& number) override {
 	os << static_cast<int> (number.getValue ());
 		
@@ -29,7 +30,7 @@
       void visitCastExpression (const CastExpression& expr) override {
 	
 	expr.getExpression ().accept (*this);
-	os << " as " << (expr.getType () == Type::SI8 ? "SI8" : "UI8");
+	os << " as " << expr.getType () ;
 		
       }
       
@@ -158,5 +159,32 @@
       
     };
     
-
+    
+    std::ostream& operator<< (std::ostream& os, const Whiley::Frame& f) {
+      for (auto s : f.getLocalSymbols ()) {
+	std::visit (overloaded {
+	    [&s,&os](const VarDecl& decl)->void {
+	      os << decl.type << " "  << s.getName() << "\n"; 
+	    },
+	    [&s,&os](const Function_ptr& func)->void {
+	      os << "fn " << s.getName() << " (";
+	      for (auto t: func->getParams()) {
+		if (std::holds_alternative<ParamDecl> (t.getUserData()))
+		  os << std::get<ParamDecl> (t.getUserData()).type << " " << t.getName() <<",";
+	      }
+		
+	      os << ") -> " << func->returns () << "{\n";
+	      os << func->getFrame() << "\n";
+	      os << *func->getStmt() << "\n";
+	      os << "}\n";
+	    },
+	      [](auto&) {}
+	      
+	  },
+	  s.getUserData ()
+	  );
+      }
+      return os;
+      
+    }
   }

@@ -1,15 +1,19 @@
 
 #include "whiley/ast.hpp"
+#include "whiley/symbol.hpp"
 #include "whiley/typechecker.hpp"
 
 #include <unordered_map>
 #include <string>
 #include <stdexcept>
 #include <sstream>
+#include <variant>
 
 namespace Whiley {
   struct TypeChecker::Internal {
-    std::unordered_map<std::string,Declaration> declarations;
+    Internal(Whiley::Frame f) : frame(f) {} 
+    //std::unordered_map<std::string,Declaration> declarations;
+    Whiley::Frame frame;
     Type type {Type::Untyped};
     bool ok;
   };
@@ -37,12 +41,25 @@ namespace Whiley {
   TypeChecker::~TypeChecker () {}
 
   bool TypeChecker::CheckProgram (Program& prgm) {
-    _internal = std::make_unique<Internal> ();
-    for (auto& t : prgm.getVars ()) {
-      _internal->declarations.emplace (t.getName (),t);
+    _internal = std::make_unique<Internal> (prgm.getFrame());
+    auto oldframe = _internal->frame;
+    bool ok = true;
+    for (auto s : oldframe.getLocalSymbols() ) {
+      if (std::holds_alternative<Whiley::Function_ptr> (s.getUserData())) {
+	auto func = std::get<Whiley::Function_ptr> (s.getUserData());
+	_internal->frame = _internal->frame.open (s.getName());
+	ok = ok && CheckStatement(*func->getStmt());
+	_internal->frame = _internal->frame.close();
+      }
     }
-    return CheckStatement(prgm.getStmt());
+    /*for (auto t : prgm.getVars ()) {
+      _internal->declarations.emplace (t.getName (),t);
+      }*/
+    //_internal->frame = prgm.getFrame();
+    return ok && CheckStatement(prgm.getStmt());
   }
+
+  
   
   Type TypeChecker::CheckExpression (Expression& e) {
     e.accept(*this);
@@ -56,15 +73,26 @@ namespace Whiley {
     return _internal->ok;
   }
   
+  auto symbType(const Symbol& s) {
+    return std::visit(Whiley::overloaded {
+	[](const VarDecl& vd){return vd.type;},
+	  [](const ParamDecl& vd){return vd.type;},
+	  [](auto&) {return Whiley::Type::Untyped;}
+	  },
+      s.getUserData()
+      );
+  }
   
   void TypeChecker::visitIdentifier (const Identifier& id)  {
-    auto it = _internal->declarations.find (id.getName());
+    /*auto it = _internal->declarations.find (id.getName());
     if (it != _internal->declarations.end ()) {
       _internal->type = it->second.getType ();
     }
 
     else
-      _internal->type = Type::Untyped;
+    _internal->type = Type::Untyped;*/
+    auto symb = id.getSymbol();
+    _internal->type = symbType(symb);
   }
   
   void TypeChecker::visitNumberExpression (const NumberExpression&)  {
@@ -148,18 +176,19 @@ namespace Whiley {
   
   void TypeChecker::visitAssignStatement (const AssignStatement& ass)  {
     auto val = CheckExpression (ass.getExpression());
-    auto decl = _internal->declarations.find (ass.getAssignName());
-    if (decl != _internal->declarations.end()) {
-      _internal->ok = decl->second.getType () == val;
+    Whiley::Symbol symb{"h"};
+    if (_internal->frame.resolve(ass.getAssignName(),symb)) {
+      auto symb_type = symbType(symb);
+      _internal->ok = symb_type == val;
       if (!_internal->ok)
-	messaging << TypeMismatch (decl->second.getType (),val,ass);
+	messaging << TypeMismatch (symb_type,val,ass);
+      
     }
     else {
-      messaging << VariableNotDeclared{ass.getAssignName(),ass};
+      messaging << VariableNotDeclared (ass.getAssignName(),ass);
       _internal->ok = false;
     }
   }
-  
   void TypeChecker::visitAssertStatement (const AssertStatement& ass)  {
     auto val = CheckExpression (ass.getExpression());
     _internal->ok = val!=Type::Untyped;

@@ -12,10 +12,15 @@
 #include <cstdint>
 #include <sstream>
 #include <utility>
+#include <generator>
 
 #include "whiley/symbol.hpp"
 
   namespace Whiley {
+    template<class... Ts> struct overloaded : Ts... { 
+      using Ts::operator()...; 
+    };
+    
     class Identifier;
     class NumberExpression;
     class NumberExpression;
@@ -36,17 +41,7 @@
     class AssertStatement;
     class AssumeStatement;
 
-    enum class Type {
-      Untyped,
-      UI8,
-      SI8,
-      UI16,
-      SI16,
-      UI32,
-      SI32,
-      UI64,
-      SI64,
-    };
+    
 
     inline std::size_t bytesize(Type t) {
       switch (t) {
@@ -149,6 +144,17 @@
       bool parameter;
       bool output;
     };
+
+    class FuncDeclaration {
+    public:
+      FuncDeclaration (Whiley::Symbol symb,Whiley::Function_ptr f) : symb(symb),func(f) {}
+      auto getFunction () {return func;}
+      auto getSymbol () {return symb;}
+      
+    private:
+      Whiley::Symbol symb;
+      Whiley::Function_ptr func;
+    };
     
     struct fileloc_t {
       std::size_t line{1};
@@ -220,6 +226,8 @@
     public:
       Identifier (Whiley::Symbol name, const location_t& loc = location_t{}) : Expression(loc), symb(std::move(name)) {}
       auto getName () const {return symb.getName();}
+      auto getSymbol () const {return symb;}
+      
       void accept (ExpressionVisitor& v) const {v.visitIdentifier (*this);} 
       bool isConstant () const override {return false;}
       
@@ -477,28 +485,48 @@
     };
 
     
+    
     class Program {
     public:
-      Program (Whiley::Frame&& frame, std::vector<Declaration>&& vars, Statement_ptr&& stmt) : declarations(std::move(vars)),
-											       stmt(std::move(stmt)),
-											       frame(std::move(frame))
+      Program (Whiley::Frame&& frame,  Statement_ptr&& stmt) : 	stmt(std::move(stmt)),									       frame(std::move(frame))
       {}
-
-      auto& getStmt () const {return *stmt;}
-      auto& getVars () const {return declarations;}
       
-	       
+      auto& getStmt () const {return *stmt;}
+      
+      std::generator<Declaration> getVars () const {
+	for (auto symb : frame.getLocalSymbols()) {
+	  auto& data = symb.getUserData();
+	  if (std::holds_alternative<VarDecl> (data)) {
+	    auto v = std::get<VarDecl> (data);
+	    co_yield Declaration {symb,v.type,v.parameter,v.output};
+	  }
+	}
+	co_return;
+      }
+
+      std::generator<FuncDeclaration> getFunctions () const {
+	for (auto symb : frame.getLocalSymbols()) {
+	  auto& data = symb.getUserData();
+	  if (std::holds_alternative<Function_ptr> (data)) {
+	    auto v = std::get<Function_ptr> (data);
+	    co_yield FuncDeclaration {symb,v};
+	  }
+	}
+	co_return;
+      }
+
+      auto getFrame () const {return frame;}
+      
     private:
-      std::vector<Declaration> declarations;
       Statement_ptr stmt;
       Whiley::Frame frame;
       
     };
 
+    std::ostream& operator<< (std::ostream& os, const Whiley::Frame&);
+    
     inline std::ostream& operator<< (std::ostream& os, const Program& prgm) {
-      std::for_each (prgm.getVars().begin(),prgm.getVars().end(),[&os](auto& s){
-	os << s.getType() << " " << s.getName() << ";\n";
-      });
+      os << prgm.getFrame() << "\n";
       return os << prgm.getStmt ();
     }
     
@@ -563,9 +591,14 @@
       
       void DeclareStmt (std::string name,  Type type,bool parameter,bool out, const location_t&) {
 	auto symb = frame.createSymbol (name);
-	declarations.emplace_back (symb,type,parameter,out);
+	symb.setUserData (VarDecl {type,parameter,out});
       }
-      
+
+      void ParamDeclare (std::string name,  Type type,const location_t&) {
+	auto symb = frame.createSymbol (name);
+	symb.setUserData (ParamDecl {type});
+	params.push_back(symb);
+      }
       
       void IfStmt (const location_t& l)  {
 	auto expr = exprStack.pop ();
@@ -624,21 +657,38 @@
 							       l)
 			  );
 	
-        }
+      }
+
+      void FunctionBegin (const std::string name) {
+	funcname = name;
+	frame = frame.create (name);
+	params.clear();
+      }
+      
+      void FunctionEnd (Type ty) {
+	auto oldframe = frame;
+	frame = frame.close();
+	auto symbol = frame.createSymbol (funcname);
+	
+	symbol.setUserData (std::make_shared<Whiley::Function> (oldframe,stmtStack.pop(),std::move(params),ty));
+      }
       
       auto get () {
 	if (!stmtStack.size())
 	  SkipStmt ({0,0,0,0});
-	return Program (std::move(frame),std::move(declarations),stmtStack.pop ());
+	return Program (std::move(frame),stmtStack.pop ());
 	
       }
-	
+
+      
       
     private:
       Stack<Expression_ptr> exprStack;
       Stack<Statement_ptr> stmtStack;
-      std::vector<Declaration> declarations;
+      
       Whiley::Frame frame{""};
+      std::string funcname;
+      std::vector<Symbol> params;
     };
     
     

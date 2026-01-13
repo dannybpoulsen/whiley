@@ -73,6 +73,10 @@
 %token    OUTPUT
 %token    CHOOSE
 %token    SELECTOR
+%token    FUNCTION
+%token    ARROW 
+%token    COMMA 
+
 
 %token END 0 "end of file"
 %token <std::string>    IDENTIFIER
@@ -85,12 +89,19 @@
 
 %%
 
-prgm : decllist stmtlist  {}
-decllist :  decllist decl | decl
+prgm : decllist functionlist stmtlist  {}
+decllist :  decllist decl | /*empty*/
 decl : TYPE IDENTIFIER SEMI { builder.DeclareStmt ($2,$1,false,false,@$);}
      | PARAM TYPE IDENTIFIER SEMI { builder.DeclareStmt ($3,$2,true,false,@$);}
      | OUTPUT TYPE IDENTIFIER SEMI { builder.DeclareStmt ($3,$2,false,true,@$);}
-       
+
+paramlist :  paramlist param | /*empty*/
+param : TYPE IDENTIFIER COMMA { builder.ParamDeclare ($2,$1,@$);}
+
+
+functionlist : functionlist function |  /* empty */  
+function : FUNCTION IDENTIFIER {builder.FunctionBegin ($2);} LPARAN paramlist  RPARAN ARROW TYPE LBRACE decllist stmtlist RBRACE  {builder.FunctionEnd ($8);} 
+
 
 stmtlist : stmtlist stmt {builder.SequenceStmt (@$);} | stmt
 
