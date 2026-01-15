@@ -13,6 +13,7 @@
 #include <sstream>
 #include <utility>
 #include <generator>
+#include <algorithm>
 
 #include "whiley/symbol.hpp"
 
@@ -40,7 +41,8 @@
     class SkipStatement;
     class AssertStatement;
     class AssumeStatement;
-
+    class ReturnStatement;
+    class CallStatement;
     
 
     inline std::size_t bytesize(Type t) {
@@ -116,6 +118,8 @@
       virtual void visitChooseStatement (const ChooseStatement& ) = 0;
       
       virtual void visitSequenceStatement (const SequenceStatement& ) = 0;
+      virtual void visitReturnStatement (const ReturnStatement& ) = 0;
+      virtual void visitCallStatement (const CallStatement& ) = 0;
       
     };
     
@@ -451,7 +455,7 @@
       void accept (StatementVisitor& v) const {
 	v.visitSequenceStatement (*this);
       }
-
+      
       auto& getFirst () const {return *first;}
       auto& getSecond () const {return *second;}
       
@@ -460,6 +464,44 @@
       Statement_ptr first;
       Statement_ptr second;
       
+    };
+
+    class ReturnStatement : public Statement {
+    public:
+      ReturnStatement (Expression_ptr expr,const location_t& loc) : Statement(loc),
+								    expr(std::move(expr)) {}
+      void accept (StatementVisitor& v) const {
+	v.visitReturnStatement (*this);
+      }
+
+      auto& getExpr() const {return *expr;}
+      
+    private:
+      Expression_ptr expr;
+    };
+
+    class CallStatement : public Statement {
+    public:
+      CallStatement (std::string assignname, std::string funcname, std::vector<Expression_ptr> params ,const location_t& loc) : Statement(loc),
+
+																assign_name(assignname),
+																func_name(funcname),
+      
+      params(std::move(params)) {}
+      
+      void accept (StatementVisitor& v) const {
+	v.visitCallStatement (*this);
+      }
+
+
+      auto& assignname ()const {return assign_name;}
+      auto& funcname ()const {return func_name;}
+      auto& parameters () const {return params;}
+    private:
+      std::string assign_name;
+      std::string func_name;
+      
+      std::vector<Expression_ptr> params;
     };
 
 
@@ -672,7 +714,23 @@
 	
 	symbol.setUserData (std::make_shared<Whiley::Function> (oldframe,stmtStack.pop(),std::move(params),ty));
       }
+
+      void ReturnStmt (const location_t& l) {
+	auto expr = exprStack.pop ();
+	
+	stmtStack.insert(std::make_unique<ReturnStatement> (std::move(expr),l));
+	
+      }
       
+      void CallStmt (std::string ass, std::string funcname, std::size_t nbExprs, const location_t& loc) {
+	std::vector<Expression_ptr> exprs;
+	for (std::size_t i = 0; i< nbExprs; ++i) {
+	  exprs.push_back (std::move(exprStack.pop ()));
+	}
+	std::reverse(exprs.begin(),exprs.end());
+	stmtStack.insert(std::make_unique<CallStatement> (ass,funcname,std::move(exprs),loc));
+      }
+
       auto get () {
 	if (!stmtStack.size())
 	  SkipStmt ({0,0,0,0});

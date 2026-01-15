@@ -6,7 +6,7 @@
     public:
       OutputVisitor (std::ostream& o) : os(o) {}
       void visitIdentifier (const Identifier& ident) override {
-	os << ident.getSymbol ().getFullName();
+	os << ident.getSymbol ().getName();
       }
       
       void visitNumberExpression (const NumberExpression& number) override {
@@ -31,7 +31,7 @@
 	
 	expr.getExpression ().accept (*this);
 	os << " as " << expr.getType () ;
-		
+	
       }
       
       
@@ -116,6 +116,20 @@
       
       void visitSkipStatement (const SkipStatement& ) override {
 	os << "Skip";
+      }
+
+      void visitReturnStatement (const ReturnStatement& r) override {
+	os << "return ";
+	r.getExpr().accept(*this);
+      }
+
+      void visitCallStatement (const CallStatement& r) override {
+	os << r.assignname() << " = " << r.funcname () <<  "(";
+	for (auto& p : r.parameters()) {
+	  p->accept(*this);
+	  os << "," ;
+	}
+	os << ")"; 
       }
       
       void visitWhileStatement (const WhileStatement& whiles) override {

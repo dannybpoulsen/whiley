@@ -77,7 +77,7 @@ loc->begin = loc->end;
 "choose" { return token::CHOOSE;}
 "::" { return token::SELECTOR;}
 "," {return token::COMMA;}
-
+"return" {return token::RETURN;}
 
 <<EOF>> {return token::END;}
 [a-z]+       {yylval->emplace<std::string> (yytext); return token::IDENTIFIER; }

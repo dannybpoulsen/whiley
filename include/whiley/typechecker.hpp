@@ -29,6 +29,8 @@ namespace Whiley {
     void visitChooseStatement (const ChooseStatement& ) override ; 
     void visitSequenceStatement (const SequenceStatement& ) override ; 
     void visitMemAssignStatement (const MemAssignStatement&) override;
+    void visitReturnStatement (const ReturnStatement&) override;
+    void visitCallStatement (const CallStatement&) override;
     
   private:
     [[nodiscard]] Type CheckExpression (Expression&);

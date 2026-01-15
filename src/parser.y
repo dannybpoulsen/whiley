@@ -75,7 +75,8 @@
 %token    SELECTOR
 %token    FUNCTION
 %token    ARROW 
-%token    COMMA 
+%token    COMMA
+%token    RETURN
 
 
 %token END 0 "end of file"
@@ -84,7 +85,8 @@
 %token <std::int64_t>   CHAR
 
 %token <Type>    TYPE
-%type<std::size_t> stmt_list; 
+%type<std::size_t> stmt_list;
+%type<std::size_t> expr_list; 
 %locations
 
 %%
@@ -110,6 +112,9 @@ stmt : simpstmt  | selectivestmt | iterativestmt
 stmt_list : SELECTOR stmt {$$ =1;}
 | stmt_list SELECTOR stmt {$$ = $1+1;}
 
+expr_list :  expr {$$ =1;}
+| expr_list COMMA expr {$$ = $1+1;}
+
 selectivestmt : IF LPARAN expr RPARAN LBRACE stmtlist RBRACE ELSE LBRACE stmtlist RBRACE {builder.IfStmt (@$);}
               | IF LPARAN expr RPARAN LBRACE stmtlist RBRACE {builder.SkipStmt (@$);builder.IfStmt (@$);}
               | CHOOSE LBRACE stmt_list RBRACE {builder.ChooseStmt ($3,@$);}
@@ -120,7 +125,9 @@ simpstmt : IDENTIFIER ASS expr SEMI { builder.AssignStmt ($1,@$);}
 | SKIP SEMI {builder.SkipStmt (@$);}
 | DEREF expr ASS expr SEMI {builder.MemAssignStmt (@$);}
 | ASSERT LPARAN expr RPARAN SEMI {builder.AssertStmt (@$);} 
-| ASSUME LPARAN expr RPARAN SEMI {builder.AssumeStmt (@$);} 
+| ASSUME LPARAN expr RPARAN SEMI {builder.AssumeStmt (@$);}
+| RETURN expr SEMI {builder.ReturnStmt (@$);}
+| IDENTIFIER ASS IDENTIFIER LPARAN expr_list RPARAN SEMI {builder.CallStmt ($1,$3,$5,@$);};
 
 expr : arith_expr | bool_expr
 

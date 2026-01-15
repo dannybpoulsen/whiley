@@ -16,6 +16,7 @@ namespace Whiley {
     Whiley::Frame frame;
     Type type {Type::Untyped};
     bool ok;
+    Function_ptr func;
   };
 
   template<class N>
@@ -47,9 +48,11 @@ namespace Whiley {
     for (auto s : oldframe.getLocalSymbols() ) {
       if (std::holds_alternative<Whiley::Function_ptr> (s.getUserData())) {
 	auto func = std::get<Whiley::Function_ptr> (s.getUserData());
+	_internal->func = func;
 	_internal->frame = _internal->frame.open (s.getName());
 	ok = ok && CheckStatement(*func->getStmt());
 	_internal->frame = _internal->frame.close();
+	_internal->func = nullptr;
       }
     }
     /*for (auto t : prgm.getVars ()) {
@@ -118,6 +121,17 @@ namespace Whiley {
   private:
     Type t1;
     Type t2;
+  };
+
+  struct ReturnStatementNotInFunction : public TypeCheckerMessage<Node>{
+    ReturnStatementNotInFunction (const Node& n) : TypeCheckerMessage(n) {}
+    
+    std::string to_string () const override {
+      std::stringstream str;
+      str << loc_string ()<< ": '" << "Return statement not inside a function"; 
+      return str.str();
+    }
+   
   };
   
   
@@ -250,6 +264,81 @@ namespace Whiley {
     }
     _internal->ok = _internal->ok && (expr!=Type::Untyped);
     
+  }
+
+  void TypeChecker::visitReturnStatement (const ReturnStatement& r) {
+    if (_internal->func == nullptr) {
+      messaging << ReturnStatementNotInFunction (r);
+      _internal->ok = false;
+    }
+    auto ll = CheckExpression (r.getExpr());
+    if (ll != _internal->func->returns()) {
+      messaging << TypeMismatch (ll,_internal->func->returns(),r);
+      _internal->ok = false;
+    }
+  }
+
+  void TypeChecker::visitCallStatement (const CallStatement& r) {
+    Whiley::Symbol func_symb{"h"};
+    Whiley::Symbol assign_name{"h"};
+    
+    if (!_internal->frame.resolve(r.assignname(),assign_name) ||	!_internal->frame.resolve(r.funcname(),func_symb)			 ) {
+      _internal->ok = false;
+      return;
+    }
+    
+    if (!std::holds_alternative<Whiley::Function_ptr> (func_symb.getUserData ())) {
+      _internal->ok = false;
+      return;
+    }
+
+    if (!std::holds_alternative<Whiley::VarDecl> (assign_name.getUserData ()) && !std::holds_alternative<Whiley::ParamDecl> (assign_name.getUserData ())) {
+      _internal->ok = false;
+      return;
+    }
+
+    auto func_ptrs = std::get<Whiley::Function_ptr> (func_symb.getUserData ());
+    auto assignType = std::visit (Whiley::overloaded {
+	[](const Whiley::VarDecl& dec) {return dec.type;},
+	[](const Whiley::ParamDecl& dec) {return dec.type;},
+	  [](auto& )->Whiley::Type {throw std::runtime_error ("Not a param type");
+	  }
+	  },
+      assign_name.getUserData()
+      );
+
+    if (assignType != func_ptrs->returns()) {
+        messaging << TypeMismatch (assignType,func_ptrs->returns(),r);
+	_internal->ok = false;
+    }
+
+    if (func_ptrs->getParams().size() != r.parameters().size()) {
+      _internal->ok = false;
+      return;
+    }
+
+
+    auto it = func_ptrs->getParams().begin();
+    auto pit = r.parameters().begin();
+    for (; pit != r.parameters().end(); ++it,++pit) {
+      auto actual_param = CheckExpression (**pit);
+      auto formal_param = symbType (*it);
+      if (actual_param != formal_param)  {
+	_internal->ok = false;
+	messaging << TypeMismatch (actual_param,formal_param,r);
+	
+      }
+    }
+    
+    /*if (_internal->func == nullptr) {
+      messaging << ReturnStatementNotInFunction (r);
+      _internal->ok = false;
+    }
+    auto ll = CheckExpression (r.getExpr());
+    if (ll != _internal->func->returns()) {
+      messaging << TypeMismatch (ll,_internal->func->returns(),r);
+      _internal->ok = false;
+      }*/
   }
   
 }
