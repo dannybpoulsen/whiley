@@ -42,6 +42,7 @@ loc->begin = loc->end;
 "ui32"      {yylval->emplace<Type> (Type::UI32); return token::TYPE;}
 "si64"      {yylval->emplace<Type> (Type::SI64); return token::TYPE;}
 "ui64"      {yylval->emplace<Type> (Type::UI64); return token::TYPE;}
+"ptr"      {yylval->emplace<Type> (Type::Pointer); return token::TYPE;}
 
 "while"      {return token::WHILE;}
 "if"      {return token::IF;}

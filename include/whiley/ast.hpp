@@ -85,6 +85,8 @@
 	return os << "ui64";
       case Type::SI64:
 	return os << "si64";
+      case Type::Pointer:
+	return os << "ptr";
       default:
 	std::unreachable();
       }

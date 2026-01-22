@@ -12,7 +12,6 @@
 namespace Whiley {
   struct TypeChecker::Internal {
     Internal(Whiley::Frame f) : frame(f) {} 
-    //std::unordered_map<std::string,Declaration> declarations;
     Whiley::Frame frame;
     Type type {Type::Untyped};
     bool ok;
@@ -55,10 +54,6 @@ namespace Whiley {
 	_internal->func = nullptr;
       }
     }
-    /*for (auto t : prgm.getVars ()) {
-      _internal->declarations.emplace (t.getName (),t);
-      }*/
-    //_internal->frame = prgm.getFrame();
     return ok && CheckStatement(prgm.getStmt());
   }
 
@@ -87,13 +82,6 @@ namespace Whiley {
   }
   
   void TypeChecker::visitIdentifier (const Identifier& id)  {
-    /*auto it = _internal->declarations.find (id.getName());
-    if (it != _internal->declarations.end ()) {
-      _internal->type = it->second.getType ();
-    }
-
-    else
-    _internal->type = Type::Untyped;*/
     auto symb = id.getSymbol();
     _internal->type = symbType(symb);
   }
@@ -123,6 +111,43 @@ namespace Whiley {
     Type t2;
   };
 
+   
+  struct InconsistentNumberofParameters : public TypeCheckerMessage<Node>{
+    InconsistentNumberofParameters (const Node& n) : TypeCheckerMessage(n) {}
+    
+    std::string to_string () const override {
+      std::stringstream str;
+      str << loc_string ()<< ": '" << "Inconsistent number of parameters (formal vs actual)"; 
+      return str.str();
+    }
+    
+
+  };
+
+  struct NotAFunction : public TypeCheckerMessage<Node>{
+    NotAFunction (const Node& n,Whiley::Symbol name) : TypeCheckerMessage(n),name(name) {}
+    
+    std::string to_string () const override {
+      std::stringstream str;
+      str << loc_string ()<< ": '" << name.getFullName() << " is not a function"; 
+      return str.str();
+    }
+
+      Whiley::Symbol name;
+  };
+
+    struct NotAVariable : public TypeCheckerMessage<Node>{
+    NotAVariable (const Node& n,Whiley::Symbol name) : TypeCheckerMessage(n),name(name) {}
+    
+    std::string to_string () const override {
+      std::stringstream str;
+      str << loc_string ()<< ": '" << name.getFullName() << " is not a variable"; 
+      return str.str();
+    }
+
+      Whiley::Symbol name;
+  };
+  
   struct ReturnStatementNotInFunction : public TypeCheckerMessage<Node>{
     ReturnStatementNotInFunction (const Node& n) : TypeCheckerMessage(n) {}
     
@@ -137,8 +162,8 @@ namespace Whiley {
   
   void TypeChecker::visitDerefExpression (const DerefExpression& expr)  {
     auto leftType =  CheckExpression (expr.getMem ());
-    if (leftType != Type::UI8) {
-      messaging << TypeMismatch (leftType,Type::UI8,expr);
+    if (leftType != Type::Pointer) {
+      messaging << TypeMismatch (leftType,Type::Pointer,expr);
       _internal->type = Type::Untyped;
     }
     else
@@ -163,11 +188,20 @@ namespace Whiley {
     if (leftType == Type::Untyped ||
 	rightType == Type::Untyped)
       _internal->type = Type::Untyped;
-	
+    else if (leftType  == Type::Pointer  && expr.getOp () == BinOps::Add) {
+      if (rightType != Type::UI64) {
+	messaging << TypeMismatch (rightType,Type::UI64,expr);
+	_internal->type = Type::Untyped;
+      }
+      else
+	_internal->type = Type::Pointer;
+      
+    }
     else if (leftType == rightType ) {
       _internal->type = leftType;
     }
     else {
+      messaging << TypeMismatch (leftType,rightType,expr);
       _internal->type = Type::Untyped;
     }
     
@@ -258,8 +292,8 @@ namespace Whiley {
   void TypeChecker::visitMemAssignStatement (const MemAssignStatement& ma) {
     auto loc = CheckExpression(ma.getMemLoc ());
     auto expr = CheckExpression(ma.getExpression ());
-    if (loc != Type::UI8) {
-      messaging << TypeMismatch (loc,Type::UI8,ma.getMemLoc());
+    if (loc != Type::Pointer) {
+      messaging << TypeMismatch (loc,Type::Pointer,ma.getMemLoc());
       _internal->ok = false; 
     }
     _internal->ok = _internal->ok && (expr!=Type::Untyped);
@@ -288,6 +322,7 @@ namespace Whiley {
     }
     
     if (!std::holds_alternative<Whiley::Function_ptr> (func_symb.getUserData ())) {
+      messaging << NotAFunction (r,func_symb);
       _internal->ok = false;
       return;
     }
@@ -299,11 +334,11 @@ namespace Whiley {
 
     auto func_ptrs = std::get<Whiley::Function_ptr> (func_symb.getUserData ());
     auto assignType = std::visit (Whiley::overloaded {
-	[](const Whiley::VarDecl& dec) {return dec.type;},
-	[](const Whiley::ParamDecl& dec) {return dec.type;},
-	  [](auto& )->Whiley::Type {throw std::runtime_error ("Not a param type");
+	  [](const Whiley::VarDecl& dec) {return dec.type;},
+	  [](const Whiley::ParamDecl& dec) {return dec.type;},
+	  [this,&r,&assign_name](auto& )->Whiley::Type { _internal->ok = false; messaging << NotAVariable (r,assign_name); return Type::Untyped;
 	  }
-	  },
+	    },
       assign_name.getUserData()
       );
 
@@ -313,6 +348,8 @@ namespace Whiley {
     }
 
     if (func_ptrs->getParams().size() != r.parameters().size()) {
+      messaging << InconsistentNumberofParameters(r);
+	
       _internal->ok = false;
       return;
     }
@@ -325,20 +362,11 @@ namespace Whiley {
       auto formal_param = symbType (*it);
       if (actual_param != formal_param)  {
 	_internal->ok = false;
-	messaging << TypeMismatch (actual_param,formal_param,r);
+	messaging << TypeMismatch (actual_param,formal_param,**pit);
 	
       }
     }
     
-    /*if (_internal->func == nullptr) {
-      messaging << ReturnStatementNotInFunction (r);
-      _internal->ok = false;
-    }
-    auto ll = CheckExpression (r.getExpr());
-    if (ll != _internal->func->returns()) {
-      messaging << TypeMismatch (ll,_internal->func->returns(),r);
-      _internal->ok = false;
-      }*/
   }
   
 }

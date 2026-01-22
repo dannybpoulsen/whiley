@@ -19,6 +19,7 @@ namespace Whiley {
       SI32,
       UI64,
       SI64,
+      Pointer
   };
   
   struct VarDecl {

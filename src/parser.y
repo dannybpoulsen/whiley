@@ -112,7 +112,7 @@ stmt : simpstmt  | selectivestmt | iterativestmt
 stmt_list : SELECTOR stmt {$$ =1;}
 | stmt_list SELECTOR stmt {$$ = $1+1;}
 
-expr_list :  expr {$$ =1;}
+expr_list :  expr {$$ =1;} | /*empty */ {$$ = 0;}
 | expr_list COMMA expr {$$ = $1+1;}
 
 selectivestmt : IF LPARAN expr RPARAN LBRACE stmtlist RBRACE ELSE LBRACE stmtlist RBRACE {builder.IfStmt (@$);}
