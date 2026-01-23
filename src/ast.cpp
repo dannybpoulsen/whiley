@@ -83,16 +83,28 @@
 	os << ";\n";
       }
 
-      void visitAssertStatement (const AssertStatement& ass) override {
-	os << "Assert (";
+      void visitAllocStatement (const AllocStatement& ass) override {
+	os << ass.getAssignName () << " = alloc";
 	ass.getExpression ().accept (*this);
-	os << ");\n";
+	os << ";\n";
+      }
+
+      void visitFreeStatement (const FreeStatement& ass) override {
+	os <<  "free ";
+	ass.getExpression ().accept (*this);
+	os << ";\n";
+      }
+      
+      void visitAssertStatement (const AssertStatement& ass) override {
+	os << "Assert ";
+	ass.getExpression ().accept (*this);
+	os << ";\n";
       }
 
       void visitAssumeStatement (const AssumeStatement& ass) override {
-	os << "Assume (";
+	os << "Assume ";
 	ass.getExpression ().accept (*this);
-	os << ");\n";
+	os << ";\n";
       }
 
       virtual void visitMemAssignStatement (const MemAssignStatement& assign) {

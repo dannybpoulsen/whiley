@@ -43,6 +43,8 @@
     class AssumeStatement;
     class ReturnStatement;
     class CallStatement;
+    class AllocStatement;
+    class FreeStatement;
     
 
     inline std::size_t bytesize(Type t) {
@@ -122,6 +124,8 @@
       virtual void visitSequenceStatement (const SequenceStatement& ) = 0;
       virtual void visitReturnStatement (const ReturnStatement& ) = 0;
       virtual void visitCallStatement (const CallStatement& ) = 0;
+      virtual void visitAllocStatement (const AllocStatement& ) = 0;
+      virtual void visitFreeStatement (const FreeStatement& ) = 0;
       
     };
     
@@ -361,6 +365,33 @@
 
     };
 
+    class AllocStatement  : public Statement{
+    public:
+      AllocStatement (std::string assignName, Expression_ptr&& expr, const location_t& loc) : Statement(loc),
+											       assignName(std::move(assignName)),
+											       expr(std::move(expr)) {}
+      
+      void accept (StatementVisitor& v) const override {v.visitAllocStatement(*this);}
+      auto& getAssignName () const {return assignName;}
+      auto& getExpression () const {return *expr;}
+      
+      private:
+      std::string assignName;
+      Expression_ptr expr;
+    };
+
+    class FreeStatement  : public Statement{
+    public:
+      FreeStatement (Expression_ptr&& expr, const location_t& loc) : Statement(loc),									       
+											       expr(std::move(expr)) {}
+      
+      void accept (StatementVisitor& v) const override {v.visitFreeStatement(*this);}
+      auto& getExpression () const {return *expr;}
+      
+      private:
+      Expression_ptr expr;
+    };
+    
     class AssertStatement : public Statement {
     public:
       AssertStatement (Expression_ptr&& expr, const location_t& loc) : Statement(loc),expr(std::move(expr)) {}
@@ -617,6 +648,20 @@
 	stmtStack.insert (std::make_unique<AssignStatement> (name,std::move(expr),l));
       }
 
+      void AllocStmt (std::string name, const location_t& l) {
+	
+	auto expr = exprStack.pop ();
+	
+	stmtStack.insert (std::make_unique<AllocStatement> (name,std::move(expr),l));
+      }
+
+      void FreeStmt (const location_t& l) {
+	
+	auto expr = exprStack.pop ();
+	
+	stmtStack.insert (std::make_unique<FreeStatement> (std::move(expr),l));
+      }
+      
       void AssertStmt (const location_t& l) {
 
 	auto expr = exprStack.pop ();

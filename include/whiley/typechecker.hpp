@@ -21,6 +21,8 @@ namespace Whiley {
     void visitBinaryExpression (const BinaryExpression& ) override ;  
     
     void visitAssignStatement (const AssignStatement& ) override ; 
+    void visitAllocStatement (const AllocStatement& ) override ; 
+    void visitFreeStatement (const FreeStatement& ) override ; 
     void visitAssertStatement (const AssertStatement& ) override ; 
     void visitAssumeStatement (const AssumeStatement& ) override ; 
     void visitIfStatement (const IfStatement& ) override ; 

@@ -77,7 +77,8 @@
 %token    ARROW 
 %token    COMMA
 %token    RETURN
-
+%token    ALLOC
+%token    FREE
 
 %token END 0 "end of file"
 %token <std::string>    IDENTIFIER
@@ -122,10 +123,12 @@ selectivestmt : IF LPARAN expr RPARAN LBRACE stmtlist RBRACE ELSE LBRACE stmtlis
 iterativestmt : WHILE LPARAN expr RPARAN LBRACE stmtlist RBRACE {builder.WhileStmt (@$);}
 
 simpstmt : IDENTIFIER ASS expr SEMI { builder.AssignStmt ($1,@$);}
+| IDENTIFIER ASS ALLOC expr SEMI { builder.AllocStmt ($1,@$);}
+| FREE expr SEMI { builder.FreeStmt (@$);}
 | SKIP SEMI {builder.SkipStmt (@$);}
 | DEREF expr ASS expr SEMI {builder.MemAssignStmt (@$);}
-| ASSERT LPARAN expr RPARAN SEMI {builder.AssertStmt (@$);} 
-| ASSUME LPARAN expr RPARAN SEMI {builder.AssumeStmt (@$);}
+| ASSERT  expr  SEMI {builder.AssertStmt (@$);} 
+| ASSUME  expr SEMI {builder.AssumeStmt (@$);}
 | RETURN expr SEMI {builder.ReturnStmt (@$);}
 | IDENTIFIER ASS IDENTIFIER LPARAN expr_list RPARAN SEMI {builder.CallStmt ($1,$3,$5,@$);};
 

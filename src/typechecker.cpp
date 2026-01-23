@@ -237,6 +237,40 @@ namespace Whiley {
       _internal->ok = false;
     }
   }
+
+  void TypeChecker::visitAllocStatement (const AllocStatement& ass)  {
+    auto val = CheckExpression (ass.getExpression());
+    Whiley::Symbol symb{"h"};
+    if (_internal->frame.resolve(ass.getAssignName(),symb)) {
+      auto symb_type = symbType(symb);
+      if (symb_type != Type::Pointer)
+	{
+	  messaging << TypeMismatch (symb_type,Type::Pointer,ass);
+	  _internal->ok = false;
+	}
+      if (val != Type::UI64) {
+	  messaging << TypeMismatch (val,Type::UI64,ass);
+	  _internal->ok = false;
+	
+      }
+      
+    }
+    else {
+      messaging << VariableNotDeclared (ass.getAssignName(),ass);
+      _internal->ok = false;
+    }
+  }
+
+  void TypeChecker::visitFreeStatement (const FreeStatement& ass)  {
+    auto val = CheckExpression (ass.getExpression());
+    if (val != Type::Pointer) {
+      messaging << TypeMismatch (val,Type::UI64,ass);
+      _internal->ok = false;
+      
+      }
+  }
+
+  
   void TypeChecker::visitAssertStatement (const AssertStatement& ass)  {
     auto val = CheckExpression (ass.getExpression());
     _internal->ok = val!=Type::Untyped;
