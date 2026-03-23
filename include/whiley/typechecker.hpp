@@ -33,7 +33,7 @@ namespace Whiley {
     void visitMemAssignStatement (const MemAssignStatement&) override;
     void visitReturnStatement (const ReturnStatement&) override;
     void visitCallStatement (const CallStatement&) override;
-    
+    void visitIncrementDecrementStatement (const IncrementDecrementStatement& ass) override;
   private:
     [[nodiscard]] Type CheckExpression (Expression&);
     bool CheckStatement (Statement& s);

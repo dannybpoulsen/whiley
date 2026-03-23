@@ -81,7 +81,8 @@ loc->begin = loc->end;
 "return" {return token::RETURN;}
 "alloc" {return token::ALLOC;}
 "free" {return token::FREE;}
-
+"for" {return token::FOR;}
+"++" {return token::INCREMENT;}
 
 <<EOF>> {return token::END;}
 [a-z]+       {yylval->emplace<std::string> (yytext); return token::IDENTIFIER; }

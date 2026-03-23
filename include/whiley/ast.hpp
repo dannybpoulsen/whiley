@@ -45,7 +45,7 @@
     class CallStatement;
     class AllocStatement;
     class FreeStatement;
-    
+    class IncrementDecrementStatement;
 
     inline std::size_t bytesize(Type t) {
       switch (t) {
@@ -67,6 +67,16 @@
       };
     }
 
+    inline bool isInteger (Type t) {
+      switch(t) {
+      case Type::Untyped:
+      case Type::Pointer:
+	return false;
+      default:
+	return true;
+      }
+    }
+    
     inline std::ostream& operator<< (std::ostream& os, Type t) {
       switch (t) {
       case Type::Untyped:
@@ -126,7 +136,7 @@
       virtual void visitCallStatement (const CallStatement& ) = 0;
       virtual void visitAllocStatement (const AllocStatement& ) = 0;
       virtual void visitFreeStatement (const FreeStatement& ) = 0;
-      
+      virtual void visitIncrementDecrementStatement (const IncrementDecrementStatement& ) = 0;
     };
     
     class NodeVisitor : public ExpressionVisitor,
@@ -363,6 +373,21 @@
       std::string assignName;
       Expression_ptr expr;
 
+    };
+
+    class IncrementDecrementStatement  : public Statement{
+    public:
+      IncrementDecrementStatement (std::string assignName, bool decrement,const location_t& loc) : Statement(loc),
+												   assignName(std::move(assignName)),
+												   decrement(decrement)
+										     {}
+      
+      void accept (StatementVisitor& v) const override {v.visitIncrementDecrementStatement(*this);}
+      auto& getIncrementee () const {return assignName;}
+      
+      private:
+      std::string assignName;
+      bool decrement{false};
     };
 
     class AllocStatement  : public Statement{
@@ -746,6 +771,10 @@
 							       l)
 			  );
 	
+      }
+
+      void Increment (const std::string name, location_t& l) {
+	stmtStack.insert (std::make_unique<IncrementDecrementStatement> (name,false,l));
       }
 
       void FunctionBegin (const std::string name) {

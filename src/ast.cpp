@@ -127,7 +127,7 @@
       }
       
       void visitSkipStatement (const SkipStatement& ) override {
-	os << "Skip";
+	os << "Skip;\n";
       }
 
       void visitReturnStatement (const ReturnStatement& r) override {
@@ -162,7 +162,11 @@
 	  
 	os << "\n}";
       }
-      
+
+      void visitIncrementDecrementStatement (const IncrementDecrementStatement& ass)  {
+
+	os << ass.getIncrementee () << "++;\n"; 
+	  }
       
       void visitSequenceStatement (const SequenceStatement& seg) override {
 	seg.getFirst ().accept(*this);

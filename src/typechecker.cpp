@@ -238,6 +238,20 @@ namespace Whiley {
     }
   }
 
+  void TypeChecker::visitIncrementDecrementStatement (const IncrementDecrementStatement& ass)  {
+    Whiley::Symbol symb{"h"};
+    if (_internal->frame.resolve(ass.getIncrementee(),symb)) {
+      auto symb_type = symbType(symb);
+      _internal->ok = isInteger (symb_type);
+      if (!_internal->ok)
+	messaging << TypeMismatch (symb_type,Type::UI8,ass);
+    }
+    else {
+      messaging << VariableNotDeclared (ass.getIncrementee(),ass);
+      _internal->ok = false;
+    }
+  }
+
   void TypeChecker::visitAllocStatement (const AllocStatement& ass)  {
     auto val = CheckExpression (ass.getExpression());
     Whiley::Symbol symb{"h"};

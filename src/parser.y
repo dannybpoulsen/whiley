@@ -79,6 +79,8 @@
 %token    RETURN
 %token    ALLOC
 %token    FREE
+%token    FOR
+%token    INCREMENT
 
 %token END 0 "end of file"
 %token <std::string>    IDENTIFIER
@@ -120,7 +122,8 @@ selectivestmt : IF LPARAN expr RPARAN LBRACE stmtlist RBRACE ELSE LBRACE stmtlis
               | IF LPARAN expr RPARAN LBRACE stmtlist RBRACE {builder.SkipStmt (@$);builder.IfStmt (@$);}
               | CHOOSE LBRACE stmt_list RBRACE {builder.ChooseStmt ($3,@$);}
 
-iterativestmt : WHILE LPARAN expr RPARAN LBRACE stmtlist RBRACE {builder.WhileStmt (@$);}
+iterativestmt : WHILE LPARAN expr RPARAN LBRACE stmtlist RBRACE {builder.WhileStmt (@$);}  | FOR LPARAN IDENTIFIER ASS expr  SEMI {builder.AssignStmt ($3,@$);} expr SEMI INCREMENT IDENTIFIER  RPARAN LBRACE stmtlist RBRACE {builder.Increment ($11,@$); builder.SequenceStmt (@4); builder.WhileStmt (@$);  builder.SequenceStmt (@$);} 
+
 
 simpstmt : IDENTIFIER ASS expr SEMI { builder.AssignStmt ($1,@$);}
 | IDENTIFIER ASS ALLOC expr SEMI { builder.AllocStmt ($1,@$);}
@@ -131,6 +134,7 @@ simpstmt : IDENTIFIER ASS expr SEMI { builder.AssignStmt ($1,@$);}
 | ASSUME  expr SEMI {builder.AssumeStmt (@$);}
 | RETURN expr SEMI {builder.ReturnStmt (@$);}
 | IDENTIFIER ASS IDENTIFIER LPARAN expr_list RPARAN SEMI {builder.CallStmt ($1,$3,$5,@$);};
+| IDENTIFIER INCREMENT SEMI {builder.Increment ($1,@$);}
 
 expr : arith_expr | bool_expr
 
