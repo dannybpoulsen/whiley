@@ -6,6 +6,7 @@
 #include <variant>
 #include <generator>
 #include <vector>
+#include <expected>
 
 namespace Whiley {
 

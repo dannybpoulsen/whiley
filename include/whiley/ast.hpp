@@ -645,8 +645,12 @@
       
       
       void IdentifierExpr (const std::string name, const location_t& l) {
-	auto symb = frame.resolve(name);
-	exprStack.insert (std::make_unique<Identifier> (symb,l));
+        Symbol symb{"HH"};
+	if (frame.resolve(name,symb)) {
+          exprStack.insert(std::make_unique<Identifier>(symb, l));
+        } else {
+	  NumberExpr (0,l);
+	}          
       }
 
       void DerefExpr (Type t, const location_t& l) {
