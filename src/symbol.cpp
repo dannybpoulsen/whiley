@@ -106,24 +106,14 @@ namespace Whiley {
       return _frame;   
   }
   
-  Symbol Frame::resolve(const std::string& s) const {
+  std::optional<Symbol> Frame::resolve(const std::string& s) const {
     auto it = _internal->symbols.find(s);
     if (it != _internal->symbols.end())
       return it->second;
     else
-      throw std::runtime_error ("Cannot find symbol");
-	   
+      return std::nullopt;
   }
 
-  bool Frame::resolve(const std::string& s, Symbol& symb) const {
-    auto it = _internal->symbols.find(s);
-    if (it != _internal->symbols.end()) {
-      symb = it->second;
-      return true;
-    }
-    else
-      return false;
-  }
   
   Frame::Frame(std::string s) {
     _internal = std::make_shared<Internal> (Symbol (s),nullptr);

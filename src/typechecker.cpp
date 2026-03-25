@@ -224,9 +224,8 @@ namespace Whiley {
   
   void TypeChecker::visitAssignStatement (const AssignStatement& ass)  {
     auto val = CheckExpression (ass.getExpression());
-    Whiley::Symbol symb{"h"};
-    if (_internal->frame.resolve(ass.getAssignName(),symb)) {
-      auto symb_type = symbType(symb);
+    if (auto symb = _internal->frame.resolve(ass.getAssignName())) {
+      auto symb_type = symbType(symb.value());
       _internal->ok = symb_type == val;
       if (!_internal->ok)
 	messaging << TypeMismatch (symb_type,val,ass);
@@ -239,9 +238,9 @@ namespace Whiley {
   }
 
   void TypeChecker::visitIncrementDecrementStatement (const IncrementDecrementStatement& ass)  {
-    Whiley::Symbol symb{"h"};
-    if (_internal->frame.resolve(ass.getIncrementee(),symb)) {
-      auto symb_type = symbType(symb);
+    
+    if (auto symb = _internal->frame.resolve(ass.getIncrementee())) {
+      auto symb_type = symbType(symb.value());
       _internal->ok = isInteger (symb_type);
       if (!_internal->ok)
 	messaging << TypeMismatch (symb_type,Type::UI8,ass);
@@ -254,9 +253,8 @@ namespace Whiley {
 
   void TypeChecker::visitAllocStatement (const AllocStatement& ass)  {
     auto val = CheckExpression (ass.getExpression());
-    Whiley::Symbol symb{"h"};
-    if (_internal->frame.resolve(ass.getAssignName(),symb)) {
-      auto symb_type = symbType(symb);
+    if (auto symb = _internal->frame.resolve(ass.getAssignName())) {
+      auto symb_type = symbType(symb.value());
       if (symb_type != Type::Pointer)
 	{
 	  messaging << TypeMismatch (symb_type,Type::Pointer,ass);
@@ -361,33 +359,35 @@ namespace Whiley {
   }
 
   void TypeChecker::visitCallStatement (const CallStatement& r) {
-    Whiley::Symbol func_symb{"h"};
-    Whiley::Symbol assign_name{"h"};
+    //Whiley::Symbol func_symb{"h"};
+    //Whiley::Symbol assign_name{"h"};
+    auto func_symb = _internal->frame.resolve(r.funcname());
+    auto assign_name = _internal->frame.resolve(r.assignname());
     
-    if (!_internal->frame.resolve(r.assignname(),assign_name) ||	!_internal->frame.resolve(r.funcname(),func_symb)			 ) {
+    if (!assign_name ||	!func_symb)   {
       _internal->ok = false;
       return;
     }
-    
-    if (!std::holds_alternative<Whiley::Function_ptr> (func_symb.getUserData ())) {
-      messaging << NotAFunction (r,func_symb);
+  
+  if (!std::holds_alternative<Whiley::Function_ptr> (func_symb.value().getUserData ())) {
+    messaging << NotAFunction (r,func_symb.value());
+    _internal->ok = false;
+    return;
+  }
+
+  if (!std::holds_alternative<Whiley::VarDecl> (assign_name.value().getUserData ()) && !std::holds_alternative<Whiley::ParamDecl> (assign_name.value().getUserData ())) {
       _internal->ok = false;
       return;
     }
 
-    if (!std::holds_alternative<Whiley::VarDecl> (assign_name.getUserData ()) && !std::holds_alternative<Whiley::ParamDecl> (assign_name.getUserData ())) {
-      _internal->ok = false;
-      return;
-    }
-
-    auto func_ptrs = std::get<Whiley::Function_ptr> (func_symb.getUserData ());
+  auto func_ptrs = std::get<Whiley::Function_ptr> (func_symb.value().getUserData ());
     auto assignType = std::visit (Whiley::overloaded {
 	  [](const Whiley::VarDecl& dec) {return dec.type;},
 	  [](const Whiley::ParamDecl& dec) {return dec.type;},
-	  [this,&r,&assign_name](auto& )->Whiley::Type { _internal->ok = false; messaging << NotAVariable (r,assign_name); return Type::Untyped;
+	    [this,&r,&assign_name](auto& )->Whiley::Type { _internal->ok = false; messaging << NotAVariable (r,assign_name.value()); return Type::Untyped;
 	  }
 	    },
-      assign_name.getUserData()
+      assign_name.value().getUserData()
       );
 
     if (assignType != func_ptrs->returns()) {

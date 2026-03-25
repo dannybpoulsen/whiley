@@ -645,9 +645,9 @@
       
       
       void IdentifierExpr (const std::string name, const location_t& l) {
-        Symbol symb{"HH"};
-	if (frame.resolve(name,symb)) {
-          exprStack.insert(std::make_unique<Identifier>(symb, l));
+        auto lookup = frame.resolve(name);
+	if (lookup) {
+          exprStack.insert(std::make_unique<Identifier>(lookup.value(), l));
         } else {
 	  NumberExpr (0,l);
 	}          

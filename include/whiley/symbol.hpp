@@ -6,7 +6,7 @@
 #include <variant>
 #include <generator>
 #include <vector>
-#include <expected>
+#include <optional>
 
 namespace Whiley {
 
@@ -36,7 +36,7 @@ namespace Whiley {
     
     Type type;
   };
-
+  
   
   class Statement;
   using Statement_ptr = std::unique_ptr<Statement>;
@@ -71,9 +71,12 @@ namespace Whiley {
     Frame open(std::string s);
     Frame close ();
     Frame create(std::string s);
+
+    std::optional<Symbol> resolve(const std::string& s) const;
     
-    Symbol resolve(const std::string& s) const;
+    /*Symbol resolve(const std::string& s) const;
     bool resolve(const std::string& s, Symbol&) const;
+    */
     
     Symbol createSymbol (std::string s);
     std::generator<Symbol> getLocalSymbols() const ; 
