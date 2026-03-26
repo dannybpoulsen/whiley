@@ -100,8 +100,8 @@ decl : TYPE IDENTIFIER SEMI { builder.DeclareStmt ($2,$1,false,false,@$);}
      | PARAM TYPE IDENTIFIER SEMI { builder.DeclareStmt ($3,$2,true,false,@$);}
      | OUTPUT TYPE IDENTIFIER SEMI { builder.DeclareStmt ($3,$2,false,true,@$);}
 
-paramlist :  paramlist param | /*empty*/
-param : TYPE IDENTIFIER COMMA { builder.ParamDeclare ($2,$1,@$);}
+paramlist :  param | /*empty*/ | paramlist COMMA param
+param : TYPE IDENTIFIER { builder.ParamDeclare ($2,$1,@$);}
 
 
 functionlist : functionlist function |  /* empty */  

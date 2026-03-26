@@ -85,7 +85,7 @@ loc->begin = loc->end;
 "++" {return token::INCREMENT;}
 
 <<EOF>> {return token::END;}
-[a-z]+       {yylval->emplace<std::string> (yytext); return token::IDENTIFIER; }
+[a-zA-Z_][a-zA-Z0-9_]*       {yylval->emplace<std::string> (yytext); return token::IDENTIFIER; }
 [0-9]+  {yylval->emplace<std::int64_t> (std::stoll(yytext)); return token::NUMBER; }
 -[1-9][0-9]*  {yylval->emplace<std::int64_t> (std::stoll(yytext)); return token::NUMBER; }
 \'[a-zA-Z0-9]\' {yylval->emplace<std::int64_t> (yytext[1]); return token::CHAR;}
