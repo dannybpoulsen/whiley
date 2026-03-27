@@ -136,12 +136,16 @@
       }
 
       void visitCallStatement (const CallStatement& r) override {
-	os << r.assignname() << " = " << r.funcname () <<  "(";
+	if (r.assignname () != "") {
+	  os << r.assignname() << " = ";
+	}
+	os << r.funcname () <<  "(";
+	
 	for (auto& p : r.parameters()) {
 	  p->accept(*this);
 	  os << "," ;
 	}
-	os << ")"; 
+	os << ");\n"; 
       }
       
       void visitWhileStatement (const WhileStatement& whiles) override {

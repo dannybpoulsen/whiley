@@ -134,6 +134,8 @@ simpstmt : IDENTIFIER ASS expr SEMI { builder.AssignStmt ($1,@$);}
 | ASSUME  expr SEMI {builder.AssumeStmt (@$);}
 | RETURN expr SEMI {builder.ReturnStmt (@$);}
 | IDENTIFIER ASS IDENTIFIER LPARAN expr_list RPARAN SEMI {builder.CallStmt ($1,$3,$5,@$);};
+| IDENTIFIER LPARAN expr_list RPARAN SEMI {builder.CallStmt ("",$1,$3,@$);};
+
 | IDENTIFIER INCREMENT SEMI {builder.Increment ($1,@$);}
 
 expr : arith_expr | bool_expr

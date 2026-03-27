@@ -400,59 +400,67 @@ namespace Whiley {
   void TypeChecker::visitCallStatement (const CallStatement& r) {
     _internal->hasReturn = false;
     auto func_symb = _internal->frame.resolve(r.funcname());
-    auto assign_name = _internal->frame.resolve(r.assignname());
     
-    if (!assign_name ||	!func_symb)   {
+    if (!func_symb)   {
       _internal->ok = false;
       return;
     }
   
-  if (!std::holds_alternative<Whiley::Function_ptr> (func_symb.value().getUserData ())) {
-    messaging << NotAFunction (r,func_symb.value());
+    if (!std::holds_alternative<Whiley::Function_ptr> (func_symb.value().getUserData ())) {
+      messaging << NotAFunction (r,func_symb.value());
+      _internal->ok = false;
+      return;
+    }
+    
+    
+    
+  auto func_ptrs = std::get<Whiley::Function_ptr> (func_symb.value().getUserData ());
+  if (r.assignname ()!="") {
+    auto assign_name = _internal->frame.resolve(r.assignname());
+    if (!assign_name)   {
+      _internal->ok = false;
+      return;
+    }
+  
+    if (!std::holds_alternative<Whiley::VarDecl> (assign_name.value().getUserData ()) && !std::holds_alternative<Whiley::ParamDecl> (assign_name.value().getUserData ())) {
+      _internal->ok = false;
+      return;
+    }
+    auto assignType = std::visit (Whiley::overloaded {
+	[](const Whiley::VarDecl& dec) {return dec.type;},
+	  [](const Whiley::ParamDecl& dec) {return dec.type;},
+	  [this,&r,&assign_name](auto& )->Whiley::Type { _internal->ok = false; messaging << NotAVariable (r,assign_name.value()); return Type::Untyped;
+	  }
+	  },
+      assign_name.value().getUserData()
+      );
+    
+    if (assignType != func_ptrs->returns()) {
+      messaging << TypeMismatch (assignType,func_ptrs->returns(),r);
+      _internal->ok = false;
+    }
+  }
+  
+  if (func_ptrs->getParams().size() != r.parameters().size()) {
+    messaging << InconsistentNumberofParameters(r);
+    
     _internal->ok = false;
     return;
   }
+  
 
-  if (!std::holds_alternative<Whiley::VarDecl> (assign_name.value().getUserData ()) && !std::holds_alternative<Whiley::ParamDecl> (assign_name.value().getUserData ())) {
+  auto it = func_ptrs->getParams().begin();
+  auto pit = r.parameters().begin();
+  for (; pit != r.parameters().end(); ++it,++pit) {
+    auto actual_param = CheckExpression (**pit);
+    auto formal_param = symbType (*it);
+    if (actual_param != formal_param)  {
       _internal->ok = false;
-      return;
+      messaging << TypeMismatch (actual_param,formal_param,**pit);
+      
     }
-
-  auto func_ptrs = std::get<Whiley::Function_ptr> (func_symb.value().getUserData ());
-    auto assignType = std::visit (Whiley::overloaded {
-	  [](const Whiley::VarDecl& dec) {return dec.type;},
-	  [](const Whiley::ParamDecl& dec) {return dec.type;},
-	    [this,&r,&assign_name](auto& )->Whiley::Type { _internal->ok = false; messaging << NotAVariable (r,assign_name.value()); return Type::Untyped;
-	  }
-	    },
-      assign_name.value().getUserData()
-      );
-
-    if (assignType != func_ptrs->returns()) {
-        messaging << TypeMismatch (assignType,func_ptrs->returns(),r);
-	_internal->ok = false;
-    }
-
-    if (func_ptrs->getParams().size() != r.parameters().size()) {
-      messaging << InconsistentNumberofParameters(r);
-	
-      _internal->ok = false;
-      return;
-    }
-
-
-    auto it = func_ptrs->getParams().begin();
-    auto pit = r.parameters().begin();
-    for (; pit != r.parameters().end(); ++it,++pit) {
-      auto actual_param = CheckExpression (**pit);
-      auto formal_param = symbType (*it);
-      if (actual_param != formal_param)  {
-	_internal->ok = false;
-	messaging << TypeMismatch (actual_param,formal_param,**pit);
-	
-      }
-    }
-    
+  }
+  
   }
   
 }
