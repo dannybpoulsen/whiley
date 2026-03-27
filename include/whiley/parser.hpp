@@ -1,5 +1,7 @@
 #include "whiley/ast.hpp"
+#include "whiley/options.hpp"
 
+#include <utility>
 
 namespace Whiley {
   struct ParseResult {
@@ -10,11 +12,22 @@ namespace Whiley {
     Program prgm;
     bool success;
   };
+  
+  
   class WParser {
   public:
-    
+    WParser () : flags(TypeFlags::All()) {    }
     ParseResult parse( const std::string& filename );
     ParseResult parse( std::istream& iss );
+
+    
+    template<Type t>
+    void disable() {flags.reset (t);}
+    
+	
+  private:
+    TypeFlags flags;
+    
   };
 }
 

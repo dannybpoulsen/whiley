@@ -11,7 +11,7 @@
 namespace Whiley {
   ParseResult  WParser::parse( std::istream& iss ) {
     ASTBuilder builder;
-    Scanner scanner {&iss};
+    Scanner scanner {&iss,flags};
     
     Parser parser{scanner,builder, STDMessageSystem::get()};
     
