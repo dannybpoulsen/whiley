@@ -1,5 +1,6 @@
 #include "whiley/symbol.hpp"
 
+#include <optional>
 #include <unordered_map>
 #include <string>
 #include <stdexcept>
@@ -67,6 +68,17 @@ namespace Whiley {
       else
 	throw std::runtime_error ("Symbol already exists");
     }
+
+    std::optional<Symbol>   resolve (std::string s) {
+      
+      auto it = symbols.find(s);
+      if (it != symbols.end())
+	return it->second;
+      else if (parent) {
+	return parent ->resolve(s);
+      }
+      else return std::nullopt;
+    }
     
     Symbol symb;
     std::shared_ptr<Internal> parent;
@@ -107,11 +119,7 @@ namespace Whiley {
   }
   
   std::optional<Symbol> Frame::resolve(const std::string& s) const {
-    auto it = _internal->symbols.find(s);
-    if (it != _internal->symbols.end())
-      return it->second;
-    else
-      return std::nullopt;
+    return _internal->resolve(s);
   }
 
   
