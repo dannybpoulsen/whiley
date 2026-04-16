@@ -277,7 +277,10 @@
       Gt,
       Eq,
       NEq,
-      Mod
+      Mod,
+      Xor,
+      Or,
+      And
     };
 
     class BinaryExpression : public Expression {

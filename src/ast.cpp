@@ -72,7 +72,15 @@
 	case BinOps::Mod:
 	  os << "  % ";
 	  break;
-	
+	case BinOps::Xor:
+	  os << "  ^ ";
+	  break;
+	case BinOps::Or:
+	  os << "  | ";
+	  break;
+	case BinOps::And:
+	  os << " & ";
+	  break;
 	}
 	binary.getRight ().accept (*this);
 	os << ")";

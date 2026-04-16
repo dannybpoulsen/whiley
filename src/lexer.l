@@ -71,6 +71,10 @@ loc->begin = loc->end;
 "??"  {return token::NONDETTYPE;}
 "fn " {return token::FUNCTION;}
 "->"  { return token::ARROW;}
+"^"  { return token::XOR;}
+"|"  { return token::BITOR;}
+"&"  { return token::BITAND;}
+
 
 "assert" {return token::ASSERT;}
 "assume" {return token::ASSUME;}

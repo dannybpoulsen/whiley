@@ -81,6 +81,11 @@
 %token    FREE
 %token    FOR
 %token    INCREMENT
+%token    XOR
+%token    BITOR
+%token    BITAND
+
+
 
 %token END 0 "end of file"
 %token <std::string>    IDENTIFIER
@@ -153,6 +158,9 @@ arith_expr   : arith_expr PLUS arith_term {builder.BinaryExpr (Whiley::BinOps::A
 arith_term   : arith_term MUL arith_factor {builder.BinaryExpr (Whiley::BinOps::Mul,@$);}
              | arith_term DIV arith_factor {builder.BinaryExpr (Whiley::BinOps::Div,@$);}
              | arith_term MOD arith_factor {builder.BinaryExpr (Whiley::BinOps::Mod,@$);}
+             | arith_term XOR arith_factor {builder.BinaryExpr (Whiley::BinOps::Xor,@$);}
+             | arith_term BITOR arith_factor {builder.BinaryExpr (Whiley::BinOps::Or,@$);}
+             | arith_term BITAND arith_factor {builder.BinaryExpr (Whiley::BinOps::And,@$);}
              | arith_factor
 
 arith_factor : NUMBER {builder.NumberExpr ($1,@$);}
