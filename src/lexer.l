@@ -94,6 +94,7 @@ loc->begin = loc->end;
 -[1-9][0-9]*  {yylval->emplace<std::int64_t> (std::stoll(yytext)); return token::NUMBER; }
 \'[a-zA-Z0-9]\' {yylval->emplace<std::int64_t> (yytext[1]); return token::CHAR;}
 0[xX][0-9a-fA-F]+  {yylval->emplace<std::int64_t> (std::stoll(yytext,0,16)); return token::NUMBER; }
+0[bB][0-1]+  {yylval->emplace<std::int64_t> (std::stoll(yytext,0,2)); return token::NUMBER; }
 
 
 [\n] {loc->newline (); }
