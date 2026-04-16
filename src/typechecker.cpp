@@ -204,6 +204,19 @@ namespace Whiley {
     if (leftType == Type::Untyped ||
 	rightType == Type::Untyped)
       _internal->type = Type::Untyped;
+    else if (expr.getOp () == BinOps::LShl) {
+      if (isSigned(rightType)) {
+	messaging << TypeMismatch (rightType,Type::UI64,expr);
+	_internal->type = Type::Untyped;
+      }
+      else if (bytesize (leftType) != bytesize (rightType)) {
+	  _internal->type = Type::Untyped;
+	  messaging << TypeMismatch (rightType,leftType,expr);
+	}
+      else
+	_internal->type = leftType;
+	  
+    }
     else if (leftType  == Type::Pointer  && expr.getOp () == BinOps::Add) {
       if (rightType != Type::UI64) {
 	messaging << TypeMismatch (rightType,Type::UI64,expr);

@@ -47,6 +47,18 @@
     class FreeStatement;
     class IncrementDecrementStatement;
 
+    inline bool isSigned(Type t) {
+      switch (t) {
+      case Type::SI8:
+      case Type::SI16:
+      case Type::SI32:
+      case Type::SI64:
+	return true;
+      default:
+	return false;
+      };
+    }
+
     inline std::size_t bytesize(Type t) {
       switch (t) {
       case Type::SI8:
@@ -66,7 +78,7 @@
 	return 0;
       };
     }
-
+    
     inline bool isInteger (Type t) {
       switch(t) {
       case Type::Untyped:
@@ -280,7 +292,8 @@
       Mod,
       Xor,
       Or,
-      And
+      And,
+      LShl
     };
 
     class BinaryExpression : public Expression {

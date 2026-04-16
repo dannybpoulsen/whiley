@@ -84,7 +84,7 @@
 %token    XOR
 %token    BITOR
 %token    BITAND
-
+%token    LSHL
 
 
 %token END 0 "end of file"
@@ -161,6 +161,7 @@ arith_term   : arith_term MUL arith_factor {builder.BinaryExpr (Whiley::BinOps::
              | arith_term XOR arith_factor {builder.BinaryExpr (Whiley::BinOps::Xor,@$);}
              | arith_term BITOR arith_factor {builder.BinaryExpr (Whiley::BinOps::Or,@$);}
              | arith_term BITAND arith_factor {builder.BinaryExpr (Whiley::BinOps::And,@$);}
+             | arith_term LSHL arith_factor {builder.BinaryExpr (Whiley::BinOps::LShl,@$);}
              | arith_factor
 
 arith_factor : NUMBER {builder.NumberExpr ($1,@$);}

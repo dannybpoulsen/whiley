@@ -81,6 +81,10 @@
 	case BinOps::And:
 	  os << " & ";
 	  break;
+	case BinOps::LShl:
+	  os << " << ";
+	  break;
+	
 	}
 	binary.getRight ().accept (*this);
 	os << ")";
