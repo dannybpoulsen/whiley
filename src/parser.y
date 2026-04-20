@@ -117,8 +117,8 @@ stmtlist : stmtlist stmt {builder.SequenceStmt (@$);} | stmt
 
 stmt : simpstmt  | selectivestmt | iterativestmt
 
-stmt_list : SELECTOR stmt {$$ =1;}
-| stmt_list SELECTOR stmt {$$ = $1+1;}
+stmt_list : SELECTOR LBRACE stmtlist RBRACE  {$$ =1;}
+| stmt_list SELECTOR LBRACE stmtlist RBRACE {$$ = $1+1;}
 
 expr_list :  expr {$$ =1;} | /*empty */ {$$ = 0;}
 | expr_list COMMA expr {$$ = $1+1;}
