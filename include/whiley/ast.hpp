@@ -4,6 +4,7 @@
 
 #include <string>
 #include <memory>
+#include <variant>
 #include <vector>
 #include <unordered_set>
 #include <stdexcept>
@@ -233,10 +234,10 @@
     };
 
     
-    using Node_ptr = std::unique_ptr<Node>;
-
+    using Node_ptr = std::shared_ptr<Node>;
+    
     using expr_t = std::size_t;
-
+    
     
     
     class Expression : public Node {
@@ -252,8 +253,8 @@
       Type type {Type::Untyped};
     };
     
-    using Expression_ptr = std::unique_ptr<Expression>;
-    
+
+    using Expression_ptr = std::shared_ptr<Expression>;
     
     class Identifier : public Expression {
     public:
@@ -368,7 +369,7 @@
       
     };
     
-    using Statement_ptr = std::unique_ptr<Statement>;
+    using Statement_ptr = std::shared_ptr<Statement>;
 
     class SkipStatement  : public Statement{
     public:
@@ -649,22 +650,35 @@
     
     class ASTBuilder {
     public:
+
       
       
       void NumberExpr (std::int64_t val, const location_t& l) {
-	exprStack.insert (std::make_unique<NumberExpression> (val,l));
+	exprStack.insert (std::make_shared<NumberExpression> (val,l));
       }
 
       
       void UndefExpr (Whiley::Type type, const location_t& l) {
-	exprStack.insert (std::make_unique<UndefExpression> (type,l));
+	exprStack.insert (std::make_shared<UndefExpression> (type,l));
       }
-      
+
+      void Constant (const std::string name) {
+	auto left = exprStack.pop ();  
+	auto symb = frame.createSymbol (name);
+	symb.setUserData (left);
+      }
       
       void IdentifierExpr (const std::string name, const location_t& l) {
         auto lookup = frame.resolve(name);
 	if (lookup) {
-          exprStack.insert(std::make_unique<Identifier>(lookup.value(), l));
+	  if (std::holds_alternative<Expression_ptr>(lookup.value().getUserData())) {
+	    auto expr = std::get<Expression_ptr>(lookup.value().getUserData());
+	    exprStack.insert(std::move(expr));
+        
+	  }
+	  else {
+	    exprStack.insert(std::make_shared<Identifier>(lookup.value(), l));
+	  }
         } else {
 	  NumberExpr (0,l);
 	}          
@@ -672,47 +686,47 @@
 
       void DerefExpr (Type t, const location_t& l) {
 	auto left = exprStack.pop ();  
-	exprStack.insert (std::make_unique<DerefExpression> (std::move(left),t,l));
+	exprStack.insert (std::make_shared<DerefExpression> (std::move(left),t,l));
       }
 
       void CastExpr (Type type, const location_t& l) {
 	auto left = exprStack.pop ();  
-	exprStack.insert (std::make_unique<CastExpression> (std::move(left),type,l));
+	exprStack.insert (std::make_shared<CastExpression> (std::move(left),type,l));
       }
       
       
       void BinaryExpr (BinOps op, const location_t& l) {
 	auto right = exprStack.pop ();
 	auto left = exprStack.pop ();  
-	exprStack.insert (std::make_unique<BinaryExpression> (std::move(left),std::move(right),op,l));
+	exprStack.insert (std::make_shared<BinaryExpression> (std::move(left),std::move(right),op,l));
       }
 
       void AssignStmt (std::string name, const location_t& l) {
 	
 	auto expr = exprStack.pop ();
 	
-	stmtStack.insert (std::make_unique<AssignStatement> (name,std::move(expr),l));
+	stmtStack.insert (std::make_shared<AssignStatement> (name,std::move(expr),l));
       }
 
       void AllocStmt (std::string name, const location_t& l) {
 	
 	auto expr = exprStack.pop ();
 	
-	stmtStack.insert (std::make_unique<AllocStatement> (name,std::move(expr),l));
+	stmtStack.insert (std::make_shared<AllocStatement> (name,std::move(expr),l));
       }
 
       void FreeStmt (const location_t& l) {
 	
 	auto expr = exprStack.pop ();
 	
-	stmtStack.insert (std::make_unique<FreeStatement> (std::move(expr),l));
+	stmtStack.insert (std::make_shared<FreeStatement> (std::move(expr),l));
       }
       
       void AssertStmt (const location_t& l) {
 
 	auto expr = exprStack.pop ();
 	  
-	stmtStack.insert (std::make_unique<AssertStatement> (std::move(expr),l));
+	stmtStack.insert (std::make_shared<AssertStatement> (std::move(expr),l));
 	
       }
 
@@ -720,7 +734,7 @@
 
 	auto expr = exprStack.pop ();
 	  
-	stmtStack.insert (std::make_unique<AssumeStatement> (std::move(expr),l));
+	stmtStack.insert (std::make_shared<AssumeStatement> (std::move(expr),l));
 	
       }
       
@@ -739,7 +753,7 @@
 	auto expr = exprStack.pop ();
 	auto elseb = stmtStack.pop ();
 	auto ifb = stmtStack.pop ();
-	stmtStack.insert (std::make_unique<IfStatement> (std::move(expr),
+	stmtStack.insert (std::make_shared<IfStatement> (std::move(expr),
 							 std::move(ifb),
 							 std::move(elseb),
 							 l)
@@ -751,19 +765,19 @@
 	for (std::size_t i = 0; i< bufs; ++i) {
 	  statements.push_back (std::move(stmtStack.pop ()));
 	}
-	stmtStack.insert (std::make_unique<ChooseStatement> (std::move(statements),l));
+	stmtStack.insert (std::make_shared<ChooseStatement> (std::move(statements),l));
       }
       
        void SkipStmt (const location_t& l) {
 	
-	 stmtStack.insert (std::make_unique<SkipStatement> (l));
+	 stmtStack.insert (std::make_shared<SkipStatement> (l));
       }
 
       void MemAssignStmt (const location_t& l) {
 	auto assign_val = exprStack.pop ();
 	auto mem = exprStack.pop ();
 	
-	stmtStack.insert (std::make_unique<MemAssignStatement> (std::move(mem),
+	stmtStack.insert (std::make_shared<MemAssignStatement> (std::move(mem),
 								std::move(assign_val),
 								l)
 			  );
@@ -774,7 +788,7 @@
 	auto expr = exprStack.pop ();
 	auto body = stmtStack.pop ();
 	
-	stmtStack.insert (std::make_unique<WhileStatement> (std::move(expr),
+	stmtStack.insert (std::make_shared<WhileStatement> (std::move(expr),
 							    std::move(body),
 							    l
 							    )
@@ -787,7 +801,7 @@
 	auto second = stmtStack.pop ();
 	auto first = stmtStack.pop ();
 	
-	stmtStack.insert (std::make_unique<SequenceStatement> (std::move(first),
+	stmtStack.insert (std::make_shared<SequenceStatement> (std::move(first),
 							       std::move(second),
 							       l)
 			  );
@@ -795,7 +809,7 @@
       }
 
       void Increment (const std::string name, location_t& l) {
-	stmtStack.insert (std::make_unique<IncrementDecrementStatement> (name,false,l));
+	stmtStack.insert (std::make_shared<IncrementDecrementStatement> (name,false,l));
       }
 
       void FunctionBegin (const std::string name) {
@@ -815,7 +829,7 @@
       void ReturnStmt (const location_t& l) {
 	auto expr = exprStack.pop ();
 	
-	stmtStack.insert(std::make_unique<ReturnStatement> (std::move(expr),l));
+	stmtStack.insert(std::make_shared<ReturnStatement> (std::move(expr),l));
 	
       }
       
@@ -825,7 +839,7 @@
 	  exprs.push_back (std::move(exprStack.pop ()));
 	}
 	std::reverse(exprs.begin(),exprs.end());
-	stmtStack.insert(std::make_unique<CallStatement> (ass,funcname,std::move(exprs),loc));
+	stmtStack.insert(std::make_shared<CallStatement> (ass,funcname,std::move(exprs),loc));
       }
 
       auto get () {

@@ -85,6 +85,7 @@
 %token    BITOR
 %token    BITAND
 %token    LSHL
+%token    CONSTANT
 
 
 %token END 0 "end of file"
@@ -104,6 +105,7 @@ decllist :  decllist decl | /*empty*/
 decl : TYPE IDENTIFIER SEMI { builder.DeclareStmt ($2,$1,false,false,@$);}
      | PARAM TYPE IDENTIFIER SEMI { builder.DeclareStmt ($3,$2,true,false,@$);}
      | OUTPUT TYPE IDENTIFIER SEMI { builder.DeclareStmt ($3,$2,false,true,@$);}
+     | CONSTANT IDENTIFIER  ASS expr SEMI {builder.Constant ($2);}
 
 paramlist :  param | /*empty*/ | paramlist COMMA param
 param : TYPE IDENTIFIER { builder.ParamDeclare ($2,$1,@$);}

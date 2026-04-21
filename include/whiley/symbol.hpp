@@ -39,13 +39,15 @@ namespace Whiley {
   
   
   class Statement;
-  using Statement_ptr = std::unique_ptr<Statement>;
+  using Statement_ptr = std::shared_ptr<Statement>;
 
+  class Expression;
+  using Expression_ptr = std::shared_ptr<Expression>;
+  
   class Function;
   using Function_ptr = std::shared_ptr<Function>;
-  
-  
-  using UserData = std::variant<std::monostate,VarDecl,Function_ptr,ParamDecl>;
+
+  using UserData = std::variant<std::monostate,VarDecl,Function_ptr,ParamDecl,Expression_ptr>;
   
   class Symbol {
   private:
