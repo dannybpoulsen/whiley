@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <iostream>
+#include <utility>
 #include "whiley/ast.hpp"
 
 namespace Whiley {
@@ -69,6 +70,21 @@ namespace Whiley {
 	throw std::runtime_error ("Symbol already exists");
     }
 
+    Symbol makeFresh (std::string name) {
+      std::size_t i {0};
+      std::string namee;
+      do {
+	namee = name+std::to_string(i);
+	if (!symbols.count(namee)) {
+	  Symbol b (symb,namee);
+	  symbols.emplace (std::make_pair(namee,b));
+	  return b;
+	}
+	++i;
+      }while(symbols.count(namee));
+      std::unreachable();
+    }
+    
     std::optional<Symbol>   resolve (std::string s) {
       
       auto it = symbols.find(s);
@@ -91,6 +107,9 @@ namespace Whiley {
     return _internal->makeSymbol (s);
   }
 
+  Symbol Frame::createFresh (std::string s) {
+    return _internal->makeFresh (s);
+  }
   Frame Frame::close() {
     if (!_internal->parent)
       throw std::runtime_error {"No scope to close to"};

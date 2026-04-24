@@ -75,6 +75,9 @@ loc->begin = loc->end;
 "|"  { return token::BITOR;}
 "&"  { return token::BITAND;}
 "<<" { return token::LSHL;}
+"[" { return token::LBRACK;}
+"]" { return token::RBRACK;}
+
 
 "assert" {return token::ASSERT;}
 "assume" {return token::ASSUME;}

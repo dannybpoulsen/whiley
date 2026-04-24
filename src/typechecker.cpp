@@ -33,7 +33,19 @@ namespace Whiley {
   private:
     const N& node;
   };
-  
+
+    struct NotAFunction : public TypeCheckerMessage<Node>{
+    NotAFunction (const Node& n,Whiley::Symbol name) : TypeCheckerMessage(n),name(name) {}
+    
+    std::string to_string () const override {
+      std::stringstream str;
+      str << loc_string ()<< ": '" << name.getFullName() << " is not a function"; 
+      return str.str();
+    }
+
+      Whiley::Symbol name;
+  };
+
   
   TypeChecker::TypeChecker (MessageSystem& m) : messaging(m) {
     
@@ -109,8 +121,8 @@ namespace Whiley {
   void TypeChecker::visitUndefExpression (const UndefExpression& e)  {
     _internal->type = e.getUndefType();
   }
-  
-  
+
+    
   struct TypeMismatch : public TypeCheckerMessage<Node>{
     TypeMismatch (Type t1,
 		  Type t2,
@@ -140,17 +152,6 @@ namespace Whiley {
 
   };
 
-  struct NotAFunction : public TypeCheckerMessage<Node>{
-    NotAFunction (const Node& n,Whiley::Symbol name) : TypeCheckerMessage(n),name(name) {}
-    
-    std::string to_string () const override {
-      std::stringstream str;
-      str << loc_string ()<< ": '" << name.getFullName() << " is not a function"; 
-      return str.str();
-    }
-
-      Whiley::Symbol name;
-  };
 
     struct NotAVariable : public TypeCheckerMessage<Node>{
     NotAVariable (const Node& n,Whiley::Symbol name) : TypeCheckerMessage(n),name(name) {}

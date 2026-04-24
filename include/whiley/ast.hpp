@@ -47,7 +47,7 @@
     class AllocStatement;
     class FreeStatement;
     class IncrementDecrementStatement;
-
+    
     inline bool isSigned(Type t) {
       switch (t) {
       case Type::SI8:
@@ -127,7 +127,6 @@
       virtual void visitDerefExpression (const DerefExpression& ) = 0;
       virtual void visitCastExpression (const CastExpression& ) = 0;
       virtual void visitUndefExpression (const UndefExpression& ) = 0;
-      
     };
 
     class StatementVisitor {
@@ -229,6 +228,8 @@
       Node (const location_t& loc = location_t{}) : location (loc) {}
       virtual ~Node () {}
       auto& getFileLocation () const {return location.begin;}
+      auto& getLocation () const {return location;}
+    
     private:
       location_t location;
     };
@@ -332,6 +333,8 @@
       Type loadtype;
     };
 
+        
+    
     class UndefExpression : public Expression {
     public:
       UndefExpression (Whiley::Type type, const location_t& loc) : Expression(loc),type(type)	 {}
@@ -505,7 +508,7 @@
     
     class WhileStatement  : public Statement{
     public:
-      WhileStatement (Expression_ptr&& cond,Statement_ptr body, const location_t& loc) : Statement(loc),
+      WhileStatement (Expression_ptr cond,Statement_ptr body, const location_t& loc) : Statement(loc),
 											 cond(std::move(cond)) ,
 											 body(std::move(body)) {}
       
@@ -579,7 +582,6 @@
       
       std::vector<Expression_ptr> params;
     };
-
 
     std::ostream& operator<< (std::ostream&, const Statement& );
     
@@ -674,7 +676,7 @@
 	  if (std::holds_alternative<Expression_ptr>(lookup.value().getUserData())) {
 	    auto expr = std::get<Expression_ptr>(lookup.value().getUserData());
 	    exprStack.insert(std::move(expr));
-        
+	    
 	  }
 	  else {
 	    exprStack.insert(std::make_shared<Identifier>(lookup.value(), l));
@@ -693,7 +695,25 @@
 	auto left = exprStack.pop ();  
 	exprStack.insert (std::make_shared<CastExpression> (std::move(left),type,l));
       }
-      
+
+      void CallExpr (std::string funcname, std::size_t nbExprs, const location_t& loc) {
+	std::vector<Expression_ptr> exprs;
+	for (std::size_t i = 0; i< nbExprs; ++i) {
+	  exprs.push_back (std::move(exprStack.pop ()));
+	}
+	std::reverse(exprs.begin(),exprs.end());
+	auto lookup = frame.resolve(funcname);
+	if (std::holds_alternative<Function_ptr>(lookup.value().getUserData())) {
+	  auto func = std::get<Function_ptr>(lookup.value().getUserData());
+	  auto symb = frame.createFresh ("£");
+	  symb.setUserData (VarDecl {func->returns(),false,false});
+	  IdentifierExpr (symb.getName(),loc);
+	  addCallSeq (std::make_shared<CallStatement> (symb.getName(),funcname,exprs,loc));
+	}
+	else {
+	  NumberExpr(0,loc);
+	}
+      }
       
       void BinaryExpr (BinOps op, const location_t& l) {
 	auto right = exprStack.pop ();
@@ -705,28 +725,28 @@
 	
 	auto expr = exprStack.pop ();
 	
-	stmtStack.insert (std::make_shared<AssignStatement> (name,std::move(expr),l));
+	pushStack (std::make_shared<AssignStatement> (name,std::move(expr),l));
       }
 
       void AllocStmt (std::string name, const location_t& l) {
 	
 	auto expr = exprStack.pop ();
 	
-	stmtStack.insert (std::make_shared<AllocStatement> (name,std::move(expr),l));
+	pushStack (std::make_shared<AllocStatement> (name,std::move(expr),l));
       }
 
       void FreeStmt (const location_t& l) {
 	
 	auto expr = exprStack.pop ();
 	
-	stmtStack.insert (std::make_shared<FreeStatement> (std::move(expr),l));
+	pushStack (std::make_shared<FreeStatement> (std::move(expr),l));
       }
       
       void AssertStmt (const location_t& l) {
 
 	auto expr = exprStack.pop ();
 	  
-	stmtStack.insert (std::make_shared<AssertStatement> (std::move(expr),l));
+	pushStack (std::make_shared<AssertStatement> (std::move(expr),l));
 	
       }
 
@@ -734,7 +754,7 @@
 
 	auto expr = exprStack.pop ();
 	  
-	stmtStack.insert (std::make_shared<AssumeStatement> (std::move(expr),l));
+	pushStack (std::make_shared<AssumeStatement> (std::move(expr),l));
 	
       }
       
@@ -753,11 +773,24 @@
 	auto expr = exprStack.pop ();
 	auto elseb = stmtStack.pop ();
 	auto ifb = stmtStack.pop ();
-	stmtStack.insert (std::make_shared<IfStatement> (std::move(expr),
-							 std::move(ifb),
-							 std::move(elseb),
+
+	if (hasWhile()) {
+	  pushStack (std::make_shared<SequenceStatement>(whileSeq(),
+							 std::make_shared<IfStatement> (std::move(expr),
+											std::move(ifb),
+											std::move(elseb),
+											l),
 							 l)
-			  );
+		     );
+		     
+	}
+	else {
+	  pushStack (std::make_shared<IfStatement> (std::move(expr),
+						    std::move(ifb),
+						    std::move(elseb),
+						    l)
+		     );
+	}
       }
 
       void ChooseStmt (std::size_t bufs, const location_t& l)  {
@@ -765,19 +798,19 @@
 	for (std::size_t i = 0; i< bufs; ++i) {
 	  statements.push_back (std::move(stmtStack.pop ()));
 	}
-	stmtStack.insert (std::make_shared<ChooseStatement> (std::move(statements),l));
+	pushStack (std::make_shared<ChooseStatement> (std::move(statements),l));
       }
       
        void SkipStmt (const location_t& l) {
 	
-	 stmtStack.insert (std::make_shared<SkipStatement> (l));
+	 pushStack (std::make_shared<SkipStatement> (l));
       }
 
       void MemAssignStmt (const location_t& l) {
 	auto assign_val = exprStack.pop ();
 	auto mem = exprStack.pop ();
 	
-	stmtStack.insert (std::make_shared<MemAssignStatement> (std::move(mem),
+	pushStack (std::make_shared<MemAssignStatement> (std::move(mem),
 								std::move(assign_val),
 								l)
 			  );
@@ -787,21 +820,36 @@
       void WhileStmt (const location_t& l) {
 	auto expr = exprStack.pop ();
 	auto body = stmtStack.pop ();
-	
-	stmtStack.insert (std::make_shared<WhileStatement> (std::move(expr),
-							    std::move(body),
-							    l
-							    )
-			  
-			  );
+	Statement_ptr while_ = std::make_shared<WhileStatement> (expr,body,l);
+	if (hasWhile()) {
+	  auto whileSequence = whileSeq ();
+	  body = std::make_shared<SequenceStatement> (std::move(body),whileSequence,body->getLocation());
+	  auto temp = std::make_shared<WhileStatement> (expr,body,  l  );
+	  
+	  while_ = std::make_shared<SequenceStatement> (whileSequence,temp,l);
+	}
+	 
+	pushStack (while_);
 	
         }
+      
+      void WhileCond () {
+	if (callSequence) {
+	  whileSequence.insert(std::move(callSequence));
+	  callSequence = nullptr;
+	}
+      }
 
+      void IfCond () {
+	WhileCond();
+      }
+
+      
       void SequenceStmt ( const location_t& l) {
 	auto second = stmtStack.pop ();
 	auto first = stmtStack.pop ();
 	
-	stmtStack.insert (std::make_shared<SequenceStatement> (std::move(first),
+	pushStack (std::make_shared<SequenceStatement> (std::move(first),
 							       std::move(second),
 							       l)
 			  );
@@ -809,7 +857,7 @@
       }
 
       void Increment (const std::string name, location_t& l) {
-	stmtStack.insert (std::make_shared<IncrementDecrementStatement> (name,false,l));
+	pushStack (std::make_shared<IncrementDecrementStatement> (name,false,l));
       }
 
       void FunctionBegin (const std::string name) {
@@ -829,7 +877,7 @@
       void ReturnStmt (const location_t& l) {
 	auto expr = exprStack.pop ();
 	
-	stmtStack.insert(std::make_shared<ReturnStatement> (std::move(expr),l));
+	pushStack(std::make_shared<ReturnStatement> (std::move(expr),l));
 	
       }
       
@@ -839,7 +887,7 @@
 	  exprs.push_back (std::move(exprStack.pop ()));
 	}
 	std::reverse(exprs.begin(),exprs.end());
-	stmtStack.insert(std::make_shared<CallStatement> (ass,funcname,std::move(exprs),loc));
+	pushStack(std::make_shared<CallStatement> (ass,funcname,std::move(exprs),loc));
       }
 
       auto get () {
@@ -852,8 +900,45 @@
       
       
     private:
+
+      void addCallSeq (Statement_ptr ptr) {
+	if (callSequence) {
+	  callSequence = std::make_shared<SequenceStatement> (callSequence,ptr,ptr->getLocation());
+	}
+	else
+	  callSequence = ptr;
+      }
+
+      Statement_ptr getCall () {
+	auto res = callSequence;
+	callSequence = nullptr;
+	return res;
+	
+      }
+
+      void pushStack (Statement_ptr ptr) {
+	Statement_ptr f = ptr;
+	if (callSequence) {
+	  f = std::make_shared<SequenceStatement> (callSequence,ptr,ptr->getLocation());
+	  callSequence = nullptr;
+	}
+
+	stmtStack.insert (std::move(f));
+	
+      }
+
+      Statement_ptr whileSeq () {
+	return whileSequence.pop();
+      }
+
+      bool hasWhile () {
+	return whileSequence.size() > 0;
+      }
+      
       Stack<Expression_ptr> exprStack;
       Stack<Statement_ptr> stmtStack;
+      Statement_ptr callSequence;
+      Stack<Statement_ptr> whileSequence;
       
       Whiley::Frame frame{""};
       std::string funcname;

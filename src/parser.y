@@ -86,6 +86,8 @@
 %token    BITAND
 %token    LSHL
 %token    CONSTANT
+%token    LBRACK
+%token    RBRACK
 
 
 %token END 0 "end of file"
@@ -125,11 +127,14 @@ stmt_list : SELECTOR LBRACE stmtlist RBRACE  {$$ =1;}
 expr_list :  expr {$$ =1;} | /*empty */ {$$ = 0;}
 | expr_list COMMA expr {$$ = $1+1;}
 
-selectivestmt : IF LPARAN expr RPARAN LBRACE stmtlist RBRACE ELSE LBRACE stmtlist RBRACE {builder.IfStmt (@$);}
-              | IF LPARAN expr RPARAN LBRACE stmtlist RBRACE {builder.SkipStmt (@$);builder.IfStmt (@$);}
+
+selectivestmt : IF LPARAN expr {builder.IfCond();}  RPARAN  LBRACE stmtlist RBRACE if_else
               | CHOOSE LBRACE stmt_list RBRACE {builder.ChooseStmt ($3,@$);}
 
-iterativestmt : WHILE LPARAN expr RPARAN LBRACE stmtlist RBRACE {builder.WhileStmt (@$);}  | FOR LPARAN IDENTIFIER ASS expr  SEMI {builder.AssignStmt ($3,@$);} expr SEMI INCREMENT IDENTIFIER  RPARAN LBRACE stmtlist RBRACE {builder.Increment ($11,@$); builder.SequenceStmt (@4); builder.WhileStmt (@$);  builder.SequenceStmt (@$);} 
+if_else       : ELSE LBRACE stmtlist RBRACE {builder.IfStmt (@$);} | /*empty*/ {builder.SkipStmt(@$);builder.IfStmt (@$);}
+
+iterativestmt : WHILE LPARAN expr  RPARAN {builder.WhileCond ();} LBRACE stmtlist RBRACE {builder.WhileStmt (@$);}
+| FOR LPARAN IDENTIFIER ASS expr  SEMI {builder.AssignStmt ($3,@$);} expr {builder.WhileCond();} SEMI INCREMENT IDENTIFIER  RPARAN LBRACE stmtlist RBRACE {builder.Increment ($12,@$); builder.SequenceStmt (@4); builder.WhileStmt (@$);  builder.SequenceStmt (@$);} 
 
 
 simpstmt : IDENTIFIER ASS expr SEMI { builder.AssignStmt ($1,@$);}
@@ -153,6 +158,7 @@ bool_expr    : arith_expr LEQ arith_expr{builder.BinaryExpr (Whiley::BinOps::LEq
              | arith_expr GT arith_expr{builder.BinaryExpr (Whiley::BinOps::Gt,@$);}
              | arith_expr EQ arith_expr{builder.BinaryExpr (Whiley::BinOps::Eq,@$);}
              | arith_expr NEQ arith_expr{builder.BinaryExpr (Whiley::BinOps::NEq,@$);}
+
 arith_expr   : arith_expr PLUS arith_term {builder.BinaryExpr (Whiley::BinOps::Add,@$);}
              | arith_expr MINUS arith_term {builder.BinaryExpr (Whiley::BinOps::Sub,@$);}
              | arith_term
@@ -174,6 +180,7 @@ arith_factor : NUMBER {builder.NumberExpr ($1,@$);}
              | NONDETTYPE TYPE {builder.UndefExpr ($2,@$);}
              | DEREFEXPR expr  AS TYPE DEREFEXPR{builder.DerefExpr ($4,@$); }
              | LPARAN expr AS TYPE RPARAN {builder.CastExpr ($4,@$);}
+             | IDENTIFIER LBRACK expr_list RBRACK {builder.CallExpr ($1,$3,@$);}
 
 %%
 

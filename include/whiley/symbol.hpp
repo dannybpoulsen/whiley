@@ -81,6 +81,7 @@ namespace Whiley {
     */
     
     Symbol createSymbol (std::string s);
+    Symbol createFresh (std::string s);
     std::generator<Symbol> getLocalSymbols() const ; 
   private:
     struct Internal;
