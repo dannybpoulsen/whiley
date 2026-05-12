@@ -91,7 +91,7 @@ loc->begin = loc->end;
 "for" {return token::FOR;}
 "++" {return token::INCREMENT;}
 "const" {return token::CONSTANT;}
-
+"atomic" { return token::ATOMIC; }
 
 <<EOF>> {return token::END;}
 [a-zA-Z_][a-zA-Z0-9_]*       {yylval->emplace<std::string> (yytext); return token::IDENTIFIER; }

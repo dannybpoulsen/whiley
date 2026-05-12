@@ -88,6 +88,7 @@
 %token    CONSTANT
 %token    LBRACK
 %token    RBRACK
+%token    ATOMIC
 
 
 %token END 0 "end of file"
@@ -119,11 +120,10 @@ function : FUNCTION IDENTIFIER {builder.FunctionBegin ($2);} LPARAN paramlist  R
 
 stmtlist : stmtlist stmt {builder.SequenceStmt (@$);} | stmt
 
-stmt : simpstmt  | selectivestmt | iterativestmt
+stmt : simpstmt  | selectivestmt | iterativestmt 
 
 stmt_list : SELECTOR LBRACE stmtlist RBRACE  {$$ =1;}
 | stmt_list SELECTOR LBRACE stmtlist RBRACE {$$ = $1+1;}
-
 expr_list :  expr {$$ =1;} | /*empty */ {$$ = 0;}
 | expr_list COMMA expr {$$ = $1+1;}
 
@@ -149,7 +149,7 @@ simpstmt : IDENTIFIER ASS expr SEMI { builder.AssignStmt ($1,@$);}
 | IDENTIFIER LPARAN expr_list RPARAN SEMI {builder.CallStmt ("",$1,$3,@$);};
 
 | IDENTIFIER INCREMENT SEMI {builder.Increment ($1,@$);}
-
+| ATOMIC LBRACE stmt RBRACE {builder.AtomicStmt (@$);}
 expr : arith_expr | bool_expr
 
 bool_expr    : arith_expr LEQ arith_expr{builder.BinaryExpr (Whiley::BinOps::LEq,@$);}

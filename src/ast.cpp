@@ -143,6 +143,12 @@
 	os << "Skip;\n";
       }
 
+      void visitAtomicStatement (const AtomicStatement& stmt) override {
+	os << "Atomic {\n";
+	stmt.getStmt ().accept(*this);
+	os << "}";
+      }
+      
       void visitReturnStatement (const ReturnStatement& r) override {
 	os << "return ";
 	r.getExpr().accept(*this);
