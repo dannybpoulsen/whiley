@@ -19,7 +19,6 @@ using token = Whiley::Parser::token;
 %}
 
 %option debug
-%option nodefault
 %option yyclass="Whiley::Scanner"
 %option noyywrap
 %option yylineno
