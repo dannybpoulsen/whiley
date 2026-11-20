@@ -17,7 +17,6 @@ namespace Whiley {
     void visitDerefExpression (const DerefExpression& ) override ;
     void visitUndefExpression (const UndefExpression& ) override ;
     void visitCastExpression (const CastExpression& ) override ;
-    
     void visitBinaryExpression (const BinaryExpression& ) override ;  
     
     void visitAssignStatement (const AssignStatement& ) override ; 

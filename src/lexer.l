@@ -32,16 +32,16 @@ loc->begin = loc->end;
 %}
 "param"    {return token::PARAM;}
 "output"    {return token::OUTPUT;}
-"var"      {yylval->emplace<Type> (Type::SI8); return token::TYPE;}
-"si8"      {yylval->emplace<Type> (Type::SI8); return token::TYPE;}
-"ui8"      {yylval->emplace<Type> (Type::UI8); return token::TYPE;}
-"si16"      {yylval->emplace<Type> (Type::SI16); return token::TYPE;}
-"ui16"      {yylval->emplace<Type> (Type::UI16); return token::TYPE;}
-"si32"      {yylval->emplace<Type> (Type::SI32); return token::TYPE;}
-"ui32"      {yylval->emplace<Type> (Type::UI32); return token::TYPE;}
-"si64"      {yylval->emplace<Type> (Type::SI64); return token::TYPE;}
-"ui64"      {yylval->emplace<Type> (Type::UI64); return token::TYPE;}
-"ptr"      {yylval->emplace<Type> (Type::Pointer); return token::TYPE;}
+"var"      {return type_res (Type::SI8);}
+"si8"      {return type_res(Type::SI8);}
+"ui8"      {return type_res(Type::UI8);}
+"si16"      {return type_res(Type::SI16);}
+"ui16"      {return type_res(Type::UI16);}
+"si32"      {return type_res(Type::SI32);}
+"ui32"      {return type_res(Type::UI32);}
+"si64"      {return type_res(Type::SI64);}
+"ui64"      {return type_res(Type::UI64);}
+"ptr"      {return type_res(Type::Pointer);}
 
 "while"      {return token::WHILE;}
 "if"      {return token::IF;}
@@ -70,6 +70,13 @@ loc->begin = loc->end;
 "??"  {return token::NONDETTYPE;}
 "fn " {return token::FUNCTION;}
 "->"  { return token::ARROW;}
+"^"  { return token::XOR;}
+"|"  { return token::BITOR;}
+"&"  { return token::BITAND;}
+"<<" { return token::LSHL;}
+"[" { return token::LBRACK;}
+"]" { return token::RBRACK;}
+
 
 "assert" {return token::ASSERT;}
 "assume" {return token::ASSUME;}
@@ -82,13 +89,16 @@ loc->begin = loc->end;
 "free" {return token::FREE;}
 "for" {return token::FOR;}
 "++" {return token::INCREMENT;}
+"const" {return token::CONSTANT;}
+
 
 <<EOF>> {return token::END;}
-[a-z]+       {yylval->emplace<std::string> (yytext); return token::IDENTIFIER; }
+[a-zA-Z_][a-zA-Z0-9_]*       {yylval->emplace<std::string> (yytext); return token::IDENTIFIER; }
 [0-9]+  {yylval->emplace<std::int64_t> (std::stoll(yytext)); return token::NUMBER; }
 -[1-9][0-9]*  {yylval->emplace<std::int64_t> (std::stoll(yytext)); return token::NUMBER; }
 \'[a-zA-Z0-9]\' {yylval->emplace<std::int64_t> (yytext[1]); return token::CHAR;}
 0[xX][0-9a-fA-F]+  {yylval->emplace<std::int64_t> (std::stoll(yytext,0,16)); return token::NUMBER; }
+0[bB][0-1]+  {yylval->emplace<std::int64_t> (std::stoll(yytext,0,2)); return token::NUMBER; }
 
 
 [\n] {loc->newline (); }

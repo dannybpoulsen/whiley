@@ -26,6 +26,7 @@
 	
 	
       }
+
       
       void visitCastExpression (const CastExpression& expr) override {
 	
@@ -71,6 +72,18 @@
 	  break;
 	case BinOps::Mod:
 	  os << "  % ";
+	  break;
+	case BinOps::Xor:
+	  os << "  ^ ";
+	  break;
+	case BinOps::Or:
+	  os << "  | ";
+	  break;
+	case BinOps::And:
+	  os << " & ";
+	  break;
+	case BinOps::LShl:
+	  os << " << ";
 	  break;
 	
 	}
@@ -136,12 +149,16 @@
       }
 
       void visitCallStatement (const CallStatement& r) override {
-	os << r.assignname() << " = " << r.funcname () <<  "(";
+	if (r.assignname () != "") {
+	  os << r.assignname() << " = ";
+	}
+	os << r.funcname () <<  "(";
+	
 	for (auto& p : r.parameters()) {
 	  p->accept(*this);
 	  os << "," ;
 	}
-	os << ")"; 
+	os << ");\n"; 
       }
       
       void visitWhileStatement (const WhileStatement& whiles) override {
