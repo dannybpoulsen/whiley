@@ -73,7 +73,7 @@ namespace Whiley {
     Frame open(std::string s);
     Frame close ();
     Frame create(std::string s);
-
+    Frame& operator=(const Frame&) = default;
     std::optional<Symbol> resolve(const std::string& s) const;
     
     /*Symbol resolve(const std::string& s) const;

@@ -410,7 +410,12 @@ namespace Whiley {
       _internal->ok = false;
     }
   }
-
+  
+  void TypeChecker::visitAtomicStatement (const AtomicStatement& r) {
+    r.getStmt().accept(*this);
+  }
+  
+  
   void TypeChecker::visitCallStatement (const CallStatement& r) {
     _internal->hasReturn = false;
     auto func_symb = _internal->frame.resolve(r.funcname());
@@ -425,7 +430,8 @@ namespace Whiley {
       _internal->ok = false;
       return;
     }
-    
+
+  
     
     
   auto func_ptrs = std::get<Whiley::Function_ptr> (func_symb.value().getUserData ());

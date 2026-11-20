@@ -33,6 +33,8 @@ namespace Whiley {
     void visitReturnStatement (const ReturnStatement&) override;
     void visitCallStatement (const CallStatement&) override;
     void visitIncrementDecrementStatement (const IncrementDecrementStatement& ass) override;
+    void visitAtomicStatement (const AtomicStatement& ass) override;
+    
   private:
     [[nodiscard]] Type CheckExpression (Expression&);
     bool CheckStatement (Statement& s);

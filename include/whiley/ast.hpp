@@ -47,6 +47,7 @@
     class AllocStatement;
     class FreeStatement;
     class IncrementDecrementStatement;
+    class AtomicStatement;
     
     inline bool isSigned(Type t) {
       switch (t) {
@@ -150,6 +151,8 @@
       virtual void visitAllocStatement (const AllocStatement& ) = 0;
       virtual void visitFreeStatement (const FreeStatement& ) = 0;
       virtual void visitIncrementDecrementStatement (const IncrementDecrementStatement& ) = 0;
+      virtual void visitAtomicStatement (const AtomicStatement& ) = 0;
+      
     };
     
     class NodeVisitor : public ExpressionVisitor,
@@ -559,6 +562,20 @@
       Expression_ptr expr;
     };
 
+    class AtomicStatement : public Statement {
+    public:
+      AtomicStatement (Statement_ptr stmt,const location_t& loc) : Statement(loc),
+								    stmt(std::move(stmt)) {}
+      void accept (StatementVisitor& v) const {
+	v.visitAtomicStatement (*this);
+      }
+
+      auto& getStmt() const {return *stmt;}
+      
+    private:
+      Statement_ptr stmt;
+    };
+    
     class CallStatement : public Statement {
     public:
       CallStatement (std::string assignname, std::string funcname, std::vector<Expression_ptr> params ,const location_t& loc) : Statement(loc),
@@ -880,6 +897,12 @@
 	pushStack(std::make_shared<ReturnStatement> (std::move(expr),l));
 	
       }
+
+      void AtomicStmt (const location_t& l) {
+	auto stmt = stmtStack.pop ();
+	
+	pushStack(std::make_shared<AtomicStatement> (std::move(stmt),l));
+      }
       
       void CallStmt (std::string ass, std::string funcname, std::size_t nbExprs, const location_t& loc) {
 	std::vector<Expression_ptr> exprs;
@@ -889,7 +912,7 @@
 	std::reverse(exprs.begin(),exprs.end());
 	pushStack(std::make_shared<CallStatement> (ass,funcname,std::move(exprs),loc));
       }
-
+      
       auto get () {
 	if (!stmtStack.size())
 	  SkipStmt ({0,0,0,0});
